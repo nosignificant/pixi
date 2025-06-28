@@ -1,31 +1,31 @@
 // src/Cell.ts
 import * as PIXI from 'pixi.js';
+//import { Point } from 'pixi.js';
 import Util from './Utils';
-import Enemy from './Enemy';
+//import BackCoord from './backCoord';
 
 export default class Cell {
   util = new Util();
-
+  //bCoord = BackCoord.point;
   x: number;
   y: number;
-  character = 5;
   strength = 0.001;
   creatureSTR = 0.1;
   health: number;
   near = 200;
+  isDead = false;
   inGroup = false;
   groupId: number | null = null;
-  fear = 0;
   color: number[] = [1, 1, 1];
 
-  closeEnemies: Enemy[] = [];
   closeCells: Cell[] = [];
+  //interestArr: [[number, number], number] = [[...], 0];
   graphic: PIXI.Graphics;
 
   constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
-    this.health = 10 * this.character;
+    this.health = 200;
     this.graphic = new PIXI.Graphics();
   }
 
@@ -40,8 +40,6 @@ export default class Cell {
   update(allCells: Cell[]) {
     const force = this.inGroup ? this.creatureSTR : this.strength;
     this.applySpacingForce(allCells, force);
-    this.fearAction();
-
     this.graphic.x = this.x;
     this.graphic.y = this.y;
 
@@ -61,14 +59,10 @@ export default class Cell {
     }
   }
 
-  checkCloseEnemy(enemies: Enemy[]) {
-    this.closeEnemies = [];
-    this.util.checkNearObj(enemies, this.closeEnemies, this);
-  }
-
   checkCloseCell(others: Cell[]) {
-    this.closeCells = [];
     this.util.checkNearObj(others, this.closeCells, this);
+    this.closeCells = this.closeCells.slice(0, 2);
+    //console.log('cell.ts, closeCells', this.closeCells);
   }
 
   applySpacingForce(allCells: Cell[], strength: number) {
@@ -97,18 +91,5 @@ export default class Cell {
         this.util.towards(this, strength * (dist - this.health), other, true);
       }
     });
-  }
-
-  fearAction() {
-    if (this.closeEnemies.length > 0) {
-      this.fear += 0.1;
-      this.closeEnemies.forEach((enemy) =>
-        this.util.towards(this, 1, enemy, false)
-      );
-    } else {
-      this.fear -= 0.1;
-    }
-
-    this.color = this.fear > 0 ? [0, 1, 1] : [1, 1, 1];
   }
 }
