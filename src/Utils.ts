@@ -7,7 +7,7 @@ export default class Utils {
 
   closestObj<T extends { x: number; y: number }>(
     array: T[],
-    obj: { x: number; y: number },
+    obj: { x: number; y: number }
   ): T[] {
     return array.slice().sort((a, b) => {
       const distA = this.dist(a.x, a.y, obj.x, obj.y);
