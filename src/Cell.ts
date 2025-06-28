@@ -1,6 +1,7 @@
 // src/Cell.ts
-import * as PIXI from "pixi.js";
-import Util from "./Utils";
+import * as PIXI from 'pixi.js';
+import Util from './Utils';
+import Enemy from './Enemy';
 
 export default class Cell {
   util = new Util();
@@ -17,7 +18,7 @@ export default class Cell {
   fear = 0;
   color: number[] = [1, 1, 1];
 
-  closeEnemies: any[] = [];
+  closeEnemies: Enemy[] = [];
   closeCells: Cell[] = [];
   graphic: PIXI.Graphics;
 
@@ -60,7 +61,7 @@ export default class Cell {
     }
   }
 
-  checkCloseEnemy(enemies: any[]) {
+  checkCloseEnemy(enemies: Enemy[]) {
     this.closeEnemies = [];
     this.util.checkNearObj(enemies, this.closeEnemies, this);
   }
