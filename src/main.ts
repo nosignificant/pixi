@@ -1,18 +1,18 @@
-import { Application, Container } from "pixi.js";
-import Cell from "./Cell";
-import Enemy from "./Enemy";
-import BackCircle from "./BackCircle";
-import Food from "./Food";
+import { Application, Container } from 'pixi.js';
+import Cell from './Cell';
+import Enemy from './Enemy';
+import BackCircle from './BackCircle';
+import Food from './Food';
 
-console.log("Script loaded");
+console.log('Script loaded');
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("DOM loaded");
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM loaded');
 
   try {
-    const pixiContainer = document.getElementById("pixi-container");
+    const pixiContainer = document.getElementById('pixi-container');
     if (!pixiContainer) {
-      console.error("Pixi container not found!");
+      console.error('Pixi container not found!');
       return;
     }
 
@@ -23,14 +23,14 @@ document.addEventListener("DOMContentLoaded", () => {
       backgroundColor: 0xffffff,
     });
 
-    console.log("Application created");
+    console.log('Application created');
 
     // 2. 캔버스를 컨테이너에 추가
     pixiContainer.appendChild(app.view as HTMLCanvasElement);
-    console.log("Canvas appended to container");
+    console.log('Canvas appended to container');
 
     // 리사이즈 이벤트 처리
-    window.addEventListener("resize", () => {
+    window.addEventListener('resize', () => {
       app.renderer.resize(
         pixiContainer.clientWidth,
         pixiContainer.clientHeight
@@ -47,9 +47,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let mouseY = 0;
 
     // Pixi 스테이지에서 마우스 위치 추적
-    app.stage.eventMode = "static";
+    app.stage.eventMode = 'static';
     app.stage.hitArea = app.screen; // 스테이지의 히트 영역을 화면 전체로 설정
-    app.stage.on("pointermove", (event) => {
+    app.stage.on('pointermove', (event) => {
       const pos = event.global;
       mouseX = pos.x;
       mouseY = pos.y;
@@ -108,8 +108,8 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    console.log("Animation started");
+    console.log('Animation started');
   } catch (error) {
-    console.error("Error creating Pixi app:", error);
+    console.error('Error creating Pixi app:', error);
   }
 });

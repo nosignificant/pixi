@@ -1,4 +1,4 @@
-import { Graphics, Point, Container } from "pixi.js";
+import { Graphics, Point, Container } from 'pixi.js';
 
 export default class Food {
   public food: Point[];

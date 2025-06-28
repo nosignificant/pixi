@@ -1,4 +1,4 @@
-import { Point, Container, Graphics } from "pixi.js";
+import { Point, Container, Graphics } from 'pixi.js';
 
 export default class BackCircle {
   public backCircle: Point[];
