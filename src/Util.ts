@@ -1,11 +1,11 @@
 export default class Utils {
-  dist(x1: number, y1: number, x2: number, y2: number): number {
+  static dist(x1: number, y1: number, x2: number, y2: number): number {
     const dx = x1 - x2;
     const dy = y1 - y2;
     return Math.sqrt(dx * dx + dy * dy);
   }
 
-  closestObj<T extends { x: number; y: number }>(
+  static closestObj<T extends { x: number; y: number }>(
     array: T[],
     obj: { x: number; y: number }
   ): T[] {
@@ -16,7 +16,7 @@ export default class Utils {
     });
   }
 
-  towards(
+  static towards(
     obj: { x: number; y: number },
     force: number,
     other: { x: number; y: number },
@@ -36,7 +36,8 @@ export default class Utils {
     obj.y += offsetY * force * direction;
   }
 
-  checkNearObj<T extends { x: number; y: number }>(
+  //인식 반경//
+  static checkNearObj<T extends { x: number; y: number }>(
     arr: T[],
     storeArr: T[],
     obj: { x: number; y: number; near: number }

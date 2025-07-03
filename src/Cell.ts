@@ -1,12 +1,13 @@
 // src/Cell.ts
 import * as PIXI from 'pixi.js';
-//import { Point } from 'pixi.js';
-import Util from './Utils';
-//import BackCoord from './backCoord';
+import Util from './Util';
+import BackCoord from './BackCoord';
+
+type Point = [number, number];
 
 export default class Cell {
   util = new Util();
-  //bCoord = BackCoord.point;
+  bCoord = BackCoord.points;
   x: number;
   y: number;
   strength = 0.001;
@@ -15,11 +16,11 @@ export default class Cell {
   near = 200;
   isDead = false;
   inGroup = false;
-  groupId: number | null = null;
+  groupID: number | null = null;
   color: number[] = [1, 1, 1];
 
   closeCells: Cell[] = [];
-  //interestArr: [[number, number], number] = [[...], 0];
+  interestArr: [Point[], number] = [[...this.bCoord], 0];
   graphic: PIXI.Graphics;
 
   constructor(x: number, y: number) {
@@ -46,22 +47,22 @@ export default class Cell {
     this.draw();
   }
 
-  tryJoinGroup(groupId: number) {
+  tryJoinGroup(groupID: number) {
     if (this.closeCells.length > 2) {
       this.inGroup = true;
-      this.groupId = groupId;
+      this.groupID = groupID;
       this.closeCells.forEach((cell) => {
         if (!cell.inGroup) {
           cell.inGroup = true;
-          cell.groupId = groupId;
+          cell.groupID = groupID;
         }
       });
     }
   }
 
   checkCloseCell(others: Cell[]) {
-    this.util.checkNearObj(others, this.closeCells, this);
-    this.closeCells = this.closeCells.slice(0, 2);
+    Util.checkNearObj(others, this.closeCells, this);
+    //this.closeCells = this.closeCells.slice(0, 2);
     //console.log('cell.ts, closeCells', this.closeCells);
   }
 
@@ -69,26 +70,21 @@ export default class Cell {
     allCells.forEach((other) => {
       if (this === other) return;
 
-      const dist = this.util.dist(this.x, this.y, other.x, other.y);
+      const dist = Util.dist(this.x, this.y, other.x, other.y);
       if (dist === 0) return;
 
       const sameGroup =
-        this.inGroup && other.inGroup && this.groupId === other.groupId;
+        this.inGroup && other.inGroup && this.groupID === other.groupID;
 
       if (!sameGroup) {
         if (dist < this.health * 2) {
-          this.util.towards(
-            this,
-            strength * (this.health * 2 - dist),
-            other,
-            false
-          );
+          Util.towards(this, strength * (this.health * 2 - dist), other, false);
         }
         return;
       }
 
       if (dist > this.health) {
-        this.util.towards(this, strength * (dist - this.health), other, true);
+        Util.towards(this, strength * (dist - this.health), other, true);
       }
     });
   }
