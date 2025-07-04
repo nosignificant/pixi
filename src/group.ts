@@ -1,57 +1,51 @@
-import Cell from './Cell';
 import * as PIXI from 'pixi.js';
-
-type Point = [number, number];
+import Cell from './Cell';
+import { GroupData } from './libs/type';
+import Util from './libs/Util';
 
 export default class Group {
-  groupCNT: number;
-  groupAVGpos: Point;
-  groupCells: Cell[];
+  static currentId = 0;
+  static groupMap = new Map<number, GroupData>();
 
-  constructor(nowID: number) {
-    this.groupCNT = nowID;
-    this.groupAVGpos = [0, 0];
-    this.groupCells = [];
-  }
-
-  setAVGpos() {
-    let sumX = 0;
-    let sumY = 0;
-    this.groupCells.forEach((cell) => {
-      sumX += cell.x;
-      sumY += cell.y;
-    });
-    const len = this.groupCells.length || 1;
-    this.groupAVGpos = [sumX / len, sumY / len];
-  }
-
-  static groupByID(allCells: Cell[], groupMap: Map<number, Cell[]>) {
+  static groupByID(allCells: Cell[]) {
     allCells.forEach((cell) => {
-      const id = cell.groupID;
+      const id = cell.state.groupID;
       if (id != null) {
-        if (!groupMap.has(id)) {
-          groupMap.set(id, []);
+        if (!Group.groupMap.has(id)) {
+          // GroupData 전체 구조로 초기화 필요
+          Group.groupMap.set(id, {
+            cells: [],
+            avgPos: { x: 0, y: 0 }, // 초기값
+            interests: [], // 초기값
+          });
         }
-        groupMap.get(id)!.push(cell);
+        Group.groupMap.get(id)!.cells.push(cell);
       }
     });
   }
 
-  static drawGroupCellsLines(group: Cell[], graphics: PIXI.Graphics) {
-    const cells = group;
-
-    if (cells.length < 1) return;
-
-    graphics.lineStyle(1, 0x8888ff, 1); // 얇은 파란 선
-
-    for (let i = 0; i < cells.length - 1; i++) {
-      const from = cells[i];
-      const to = cells[i + 1];
-
-      graphics.moveTo(from.x, from.y);
-      graphics.lineTo(to.x, to.y);
-    }
+  static setAllGroupAVGpos() {
+    Group.groupMap.forEach((groupData) => {
+      groupData.avgPos = Util.computeAvgPos(groupData.cells);
+    });
   }
 
-  // static computeInterestArr(){}
+  static drawGroupCellsLines(graphics: PIXI.Graphics) {
+    Group.groupMap.forEach((groupData) => {
+      const cells = groupData.cells.slice(0, 2);
+      if (cells.length < 2) return;
+
+      graphics.lineStyle(1, 0x8888ff, 1); // 얇은 파란 선
+
+      for (let i = 0; i < cells.length - 1; i++) {
+        const from = cells[i];
+        const to = cells[i + 1];
+
+        graphics.moveTo(from.point.x, from.point.y);
+        graphics.lineTo(to.point.x, to.point.y);
+      }
+    });
+  }
+
+  static groupInterestArr() {}
 }

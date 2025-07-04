@@ -1,10 +1,10 @@
-type Point = [number, number];
+import { Point } from './libs/type';
 
 export default class BackCoord {
   static points: Point[] = [];
 
   constructor(x: number, y: number) {
-    BackCoord.points.push([x, y]);
+    BackCoord.points.push({ x, y });
   }
 
   drawBackCoord(canvasWidth: number, slice: number): void {
@@ -15,10 +15,12 @@ export default class BackCoord {
         const cx = stepX * i + stepX / 2;
         const cy = stepX * j + stepX / 2;
 
-        const exists = BackCoord.points.some(([x, y]) => x === cx && y === cy);
+        const exists = BackCoord.points.some(
+          ({ x, y }) => x === cx && y === cy
+        );
 
         if (!exists) {
-          BackCoord.points.push([cx, cy]);
+          BackCoord.points.push({ x: cx, y: cy });
         }
       }
     }

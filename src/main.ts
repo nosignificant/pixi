@@ -29,9 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     //변수들//
     const allCells: Cell[] = [];
-    const groupMap = new Map<number, Cell[]>();
-
-    let currentGroupId = 0;
 
     const backgroundContainer = new PIXI.Container();
     const graphics = new PIXI.Graphics();
@@ -49,24 +46,26 @@ document.addEventListener('DOMContentLoaded', () => {
       allCells.push(cell);
       app.stage.addChild(cell.graphic);
       // 초기 위치 설정
-      cell.graphic.x = cell.x;
-      cell.graphic.y = cell.y;
+      cell.graphic.x = cell.point.x;
+      cell.graphic.y = cell.point.y;
     }
 
+    console.log(Group.groupMap);
     // 매 프레임 업데이트 //
     app.ticker.add(() => {
+      graphics.clear();
       allCells.forEach((cell) => {
-        if (!cell.inGroup && cell.closeCells.length > 2) {
-          currentGroupId += 1;
-          cell.tryJoinGroup(currentGroupId);
+        if (!cell.state.inGroup && cell.closeCells.length > 2) {
+          Group.currentId += 1;
+          cell.tryJoinGroup(Group.currentId);
         }
         //console.log('this group ID: ', cell.groupID);
         cell.update(allCells);
       });
 
       //groupMap초기화//
-      Group.groupByID(allCells, groupMap);
-      groupMap.forEach((group) => Group.drawGroupCellsLines(group, graphics));
+      Group.groupByID(allCells);
+      Group.drawGroupCellsLines(graphics);
     });
 
     console.log('Animation started');

@@ -1,33 +1,35 @@
 // src/Cell.ts
 import * as PIXI from 'pixi.js';
-import Util from './Util';
+import Util from './libs/Util';
 import BackCoord from './BackCoord';
-
-type Point = [number, number];
+import { Point, CellState, Interests } from './libs/type';
 
 export default class Cell {
-  util = new Util();
-  bCoord = BackCoord.points;
-  x: number;
-  y: number;
+  point: Point;
   strength = 0.001;
   creatureSTR = 0.1;
   health: number;
   near = 200;
-  isDead = false;
-  inGroup = false;
-  groupID: number | null = null;
+
+  state: CellState = {
+    isDead: false,
+    inGroup: false,
+    groupID: null,
+  };
   color: number[] = [1, 1, 1];
 
   closeCells: Cell[] = [];
-  interestArr: [Point[], number] = [[...this.bCoord], 0];
+  interests: Interests[] = [];
   graphic: PIXI.Graphics;
 
   constructor(x: number, y: number) {
-    this.x = x;
-    this.y = y;
+    this.point = { x, y };
     this.health = 200;
     this.graphic = new PIXI.Graphics();
+    this.interests = BackCoord.points.map((p) => ({
+      point: p,
+      weight: Math.random(),
+    }));
   }
 
   draw() {
@@ -39,22 +41,23 @@ export default class Cell {
   }
 
   update(allCells: Cell[]) {
-    const force = this.inGroup ? this.creatureSTR : this.strength;
+    const force = this.state.inGroup ? this.creatureSTR : this.strength;
     this.applySpacingForce(allCells, force);
-    this.graphic.x = this.x;
-    this.graphic.y = this.y;
+    this.checkCloseCell(allCells);
+    this.graphic.x = this.point.x;
+    this.graphic.y = this.point.y;
 
     this.draw();
   }
 
   tryJoinGroup(groupID: number) {
     if (this.closeCells.length > 2) {
-      this.inGroup = true;
-      this.groupID = groupID;
+      this.state.inGroup = true;
+      this.state.groupID = groupID;
       this.closeCells.forEach((cell) => {
-        if (!cell.inGroup) {
-          cell.inGroup = true;
-          cell.groupID = groupID;
+        if (!cell.state.inGroup) {
+          cell.state.inGroup = true;
+          cell.state.groupID = groupID;
         }
       });
     }
@@ -62,19 +65,19 @@ export default class Cell {
 
   checkCloseCell(others: Cell[]) {
     Util.checkNearObj(others, this.closeCells, this);
-    //this.closeCells = this.closeCells.slice(0, 2);
-    //console.log('cell.ts, closeCells', this.closeCells);
   }
 
   applySpacingForce(allCells: Cell[], strength: number) {
     allCells.forEach((other) => {
       if (this === other) return;
 
-      const dist = Util.dist(this.x, this.y, other.x, other.y);
+      const dist = Util.dist(this.point, other.point);
       if (dist === 0) return;
 
       const sameGroup =
-        this.inGroup && other.inGroup && this.groupID === other.groupID;
+        this.state.inGroup &&
+        other.state.inGroup &&
+        this.state.groupID === other.state.groupID;
 
       if (!sameGroup) {
         if (dist < this.health * 2) {
@@ -88,4 +91,5 @@ export default class Cell {
       }
     });
   }
+  computeInterest() {}
 }
