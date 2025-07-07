@@ -3,11 +3,7 @@ import { Point } from './libs/type';
 export default class BackCoord {
   static points: Point[] = [];
 
-  constructor(x: number, y: number) {
-    BackCoord.points.push({ x, y });
-  }
-
-  drawBackCoord(canvasWidth: number, slice: number): void {
+  static drawBackCoord(canvasWidth: number, slice: number): void {
     const stepX = canvasWidth / slice;
 
     for (let j = 0; j < slice; j++) {

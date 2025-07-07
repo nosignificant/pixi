@@ -1,5 +1,11 @@
 import { Point } from './type';
 
+// dist: 거리 계산 //
+// closestObj: 배열이 특정 오브젝트에 가까운 순으로 정렬 //
+// towards : obj가 other 쪽으로 force의 힘으로 향함/멀어짐 //
+// checkNearObj : arr에서 obj의 인식 반경 내부에 있는 요소 배열으로 반환 //
+// computeAvgPos : point를 가진 arr의 평균 point 계산 //
+
 export default class Util {
   static dist(point1: Point, point2: Point) {
     const dx = point1.x - point2.x;
@@ -52,6 +58,7 @@ export default class Util {
     });
   }
 
+  // 배열 평균 위치 계산 //
   static computeAvgPos<T extends { point: Point }>(arr: T[]) {
     let sumX = 0;
     let sumY = 0;

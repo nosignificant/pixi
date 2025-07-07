@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import Cell from './Cell';
 import BackCircle from './BackCircle';
 import Group from './group';
+import BackCoord from './BackCoord';
 
 document.addEventListener('DOMContentLoaded', () => {
   try {
@@ -32,13 +33,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const backgroundContainer = new PIXI.Container();
     const graphics = new PIXI.Graphics();
-    app.stage.addChild(backgroundContainer);
     app.stage.addChild(graphics);
+    app.stage.addChild(backgroundContainer);
 
-    const b = new BackCircle(backgroundContainer);
+    const b = new BackCircle();
     b.drawBackCircle(app.screen.width, 20);
+    BackCoord.drawBackCoord(app.screen.width, 20);
 
-    // 5. Cell 생성
+    b.dots.forEach((dot) => backgroundContainer.addChild(dot));
+
     for (let i = 0; i < 10; i++) {
       const offsetX = Math.floor(Math.random() * 100);
       const offsetY = Math.floor(Math.random() * 100);
@@ -66,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
       //groupMap초기화//
       Group.groupByID(allCells);
       Group.drawGroupCellsLines(graphics);
+      Group.update();
     });
 
     console.log('Animation started');

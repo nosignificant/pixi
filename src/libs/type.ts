@@ -10,6 +10,7 @@ export type GroupData = {
   cells: Cell[];
   avgPos: Point;
   interests: Interests[];
+  mostInterest: Interests;
 };
 export type CellState = {
   isDead: boolean;
