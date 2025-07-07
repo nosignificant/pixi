@@ -92,7 +92,7 @@ export default class Group {
   static updateGroupInterest() {
     Group.groupMap.forEach((groupData) => {
       groupData.interests.forEach((interest) => {
-        interest.weight = Math.random(); // 예: 무작위 값
+        interest.weight = Math.random();
       });
     });
   }
@@ -105,7 +105,6 @@ export default class Group {
         current.weight > prev.weight ? current : prev
       );
 
-      // 가장 높은 weight와 해당 point를 모두 저장
       groupData.mostInterest = {
         point: maxInterest.point,
         weight: maxInterest.weight,
