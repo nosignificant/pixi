@@ -54,8 +54,8 @@ export default class Group {
   static update() {
     Group.setAllGroupAVGpos();
     Group.updateGroupInterest();
-    Group.gotoInterest();
     Group.mostInterest();
+    Group.gotoInterest();
   }
 
   static setAllGroupAVGpos() {
@@ -83,6 +83,7 @@ export default class Group {
 
   /* groupInterest */
   /* groupInterest */
+  /* groupInterest */
 
   static groupInterestArr() {
     Group.groupMap.forEach((groupData) => {
@@ -97,7 +98,12 @@ export default class Group {
   static updateGroupInterest() {
     Group.groupMap.forEach((groupData) => {
       groupData.interests.forEach((interest) => {
-        if (interest.weight < 1) interest.weight = interest.weight - 0.01;
+        interest.weight = Math.max(0, interest.weight - 0.01);
+
+        // 예시: 랜덤 확률로 다시 살짝 증가
+        if (Math.random() < 0.01) {
+          interest.weight = Math.random(); // 새롭게 관심 끌림
+        }
       });
     });
   }
