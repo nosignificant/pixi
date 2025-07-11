@@ -3,6 +3,7 @@ import * as PIXI from 'pixi.js';
 import Util from './libs/Util';
 import BackCoord from './BackCoord';
 import { Point, CellState, Interests } from './libs/type';
+import Group from './group';
 
 export default class Cell {
   point: Point;
@@ -24,7 +25,7 @@ export default class Cell {
 
   constructor(x: number, y: number) {
     this.point = { x, y };
-    this.health = 200;
+    this.health = 20;
     this.graphic = new PIXI.Graphics();
     this.interests = BackCoord.points.map((p) => ({
       point: p,
@@ -74,16 +75,8 @@ export default class Cell {
       const dist = Util.dist(this.point, other.point);
       if (dist === 0) return;
 
-      const sameGroup =
-        this.state.inGroup &&
-        other.state.inGroup &&
-        this.state.groupID === other.state.groupID;
-
-      if (!sameGroup) {
-        if (dist < this.health * 2) {
-          Util.towards(this, strength * (this.health * 2 - dist), other, false);
-        }
-        return;
+      if (dist < this.health * 2) {
+        Util.towards(this, strength * (this.health * 2 - dist), other, false);
       }
 
       if (dist > this.health) {
@@ -91,5 +84,23 @@ export default class Cell {
       }
     });
   }
-  computeInterest() {}
+
+  groupForce(strength: number) {
+    Group.groupMap.forEach((groupData) => {
+      groupData.cells.forEach((other) => {
+        if (this === other) return;
+
+        const dist = Util.dist(this.point, other.point);
+        if (dist === 0) return;
+
+        if (dist < this.health * 2) {
+          Util.towards(this, strength * (this.health * 2 - dist), other, false);
+        }
+
+        if (dist > this.health) {
+          Util.towards(this, strength * (dist - this.health), other, true);
+        }
+      });
+    });
+  }
 }

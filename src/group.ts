@@ -14,6 +14,7 @@ export type GroupData = {
   cells: Cell[];
   avgPos: Point;
   interests: Interests[];
+  mostInterest: Interests;
 };
 */
 
@@ -51,10 +52,10 @@ export default class Group {
   }
 
   static update() {
-    Group.updateGroupInterest();
     Group.setAllGroupAVGpos();
-    Group.mostInterest();
+    Group.updateGroupInterest();
     Group.gotoInterest();
+    Group.mostInterest();
   }
 
   static setAllGroupAVGpos() {
@@ -80,19 +81,23 @@ export default class Group {
     });
   }
 
+  /* groupInterest */
+  /* groupInterest */
+
   static groupInterestArr() {
     Group.groupMap.forEach((groupData) => {
       groupData.interests = BackCoord.points.map((point) => ({
         point,
         weight: Math.random(),
       }));
+      console.log('weight set: ', groupData.interests);
     });
   }
 
   static updateGroupInterest() {
     Group.groupMap.forEach((groupData) => {
       groupData.interests.forEach((interest) => {
-        interest.weight = Math.random();
+        if (interest.weight < 1) interest.weight = interest.weight - 0.01;
       });
     });
   }
@@ -118,5 +123,36 @@ export default class Group {
         Util.towards(cell, 0.01, groupData.mostInterest, true);
       });
     });
+  }
+  static showGroupInterest(
+    canvasWidth: number,
+    slice: number,
+    graphics: PIXI.Graphics
+  ) {
+    Group.groupMap.forEach((groupData) => {
+      const boxWidth = canvasWidth / slice;
+      //console.log(boxWidth);
+      groupData.interests.forEach((interest) => {
+        graphics.lineStyle(0);
+        const h = interest.weight * 50;
+
+        const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
+        //console.log(hsl);
+        if (interest.point === groupData.mostInterest.point) {
+          graphics.beginFill('#000000');
+          console.log(interest.point);
+        } else graphics.beginFill(hsl);
+        //console.log('hsl to rgba:', hsl.toRgbaString());
+
+        graphics.drawRect(
+          interest.point.x - boxWidth / 2,
+          interest.point.y - boxWidth / 2,
+          boxWidth,
+          boxWidth
+        );
+        graphics.endFill();
+      });
+    });
+    console.log('showGroupInterest update');
   }
 }
