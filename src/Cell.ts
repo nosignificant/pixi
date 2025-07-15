@@ -9,7 +9,7 @@ export default class Cell {
   cellID = 0;
   point: Point;
   strength = 0.001;
-  creatureSTR = 0.1;
+  creatureSTR = 1;
   health: number;
   near = 200;
 
@@ -79,8 +79,10 @@ export default class Cell {
       const dist = Util.dist(this.point, other.point);
       if (dist === 0) return;
 
-      if (dist < this.health / 2) {
-        Util.towards(this, strength * 100, other, false);
+      if (other.state.groupID !== this.state.groupID) {
+        if (dist < this.health) {
+          Util.towards(this, strength * 1000, other, false);
+        }
       }
 
       if (dist > this.health * 5) {
@@ -95,14 +97,10 @@ export default class Cell {
       if (group !== undefined) {
         group.cells.forEach((other) => {
           if (this === other) return;
+
           const dist = Util.dist(this.point, other.point);
           if (dist === 0) return;
-          if (dist < this.health) {
-            Util.towards(this, strength, other, false);
-          }
-          if (dist > this.health * 2) {
-            Util.towards(this, strength * 10, { point: group.avgPos }, true);
-          }
+          Util.towards(this, strength * 100, { point: group.avgPos }, true);
         });
       } else {
         console.log(this.state.groupID, ' : groupdata undefined');

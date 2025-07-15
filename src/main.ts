@@ -60,8 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
       cell.graphic.y = cell.point.y;
       cellID += 1;
     }
-    //const initialized = false;
     // 매 프레임 업데이트 //
+
     app.ticker.add(() => {
       let currentID = 0;
       graphics.clear();
@@ -79,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
       groupMap.forEach((group) => {
         group.update();
         group.showGroupInterest(app.screen.width, 20);
+        app.stage.addChild(group.graphic);
       });
     });
 

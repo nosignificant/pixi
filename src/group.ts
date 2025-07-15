@@ -34,13 +34,13 @@ export default class Group {
 
   constructor(id: number, closeCell: Cell[]) {
     this.currentId = id;
-    this.groupInterestArr();
     this.viaPoints = [];
     this.graphic = new PIXI.Graphics();
     this.cells = closeCell;
     this.avgPos = { x: 0, y: 0 };
     this.interests = [];
     this.mostInt = { point: { x: 0, y: 0 }, weight: 0 };
+    this.groupInterestArr();
   }
 
   static groupByID(allCells: Cell[], groupMap: Map<number, Group>) {
@@ -60,29 +60,15 @@ export default class Group {
 
   update() {
     this.setAVGpos();
-    this.updateGroupInterest();
     this.mostInterest();
     this.drawGroupCellsLines();
+    this.updateGroupInterest();
+    this.drawLeg();
   }
 
   setAVGpos() {
     this.avgPos = Util.computeAvgPos(this.cells);
     //console.log(this.avgPos);
-  }
-
-  drawGroupCellsLines() {
-    const cells = this.cells.slice(0, 2);
-    if (cells.length < 2) return;
-
-    this.graphic.lineStyle(1, 0x8888ff, 1); // 얇은 파란 선
-
-    for (let i = 0; i < cells.length - 1; i++) {
-      const from = cells[i];
-      const to = cells[i + 1];
-
-      this.graphic.moveTo(from.point.x, from.point.y);
-      this.graphic.lineTo(to.point.x, to.point.y);
-    }
   }
 
   /* groupInterest */
@@ -92,7 +78,7 @@ export default class Group {
   groupInterestArr() {
     this.interests = BackCoord.points.map((point) => ({
       point,
-      weight: Math.random(),
+      weight: 0,
     }));
 
     this.viaPoints = BackCoord.points.map((point) => ({
@@ -105,11 +91,6 @@ export default class Group {
   updateGroupInterest() {
     this.interests.forEach((interest) => {
       interest.weight = Math.max(0, interest.weight - 0.01);
-
-      // 예시: 랜덤 확률로 다시 살짝 증가
-      if (Math.random() < 0.01) {
-        interest.weight = Math.random(); // 새롭게 관심 끌림
-      }
     });
   }
 
@@ -126,28 +107,62 @@ export default class Group {
     };
   }
 
+  /* drawing properties */
+  /* drawing properties */
+  /* drawing properties */
+
+  drawGroupCellsLines() {
+    this.graphic.clear();
+    const cells = this.cells.slice(0, 2);
+    if (cells.length < 2) return;
+
+    this.graphic.lineStyle(1, 0x8888ff, 1); // 얇은 파란 선
+
+    for (let i = 0; i < cells.length - 1; i++) {
+      const from = cells[i];
+      const to = cells[i + 1];
+
+      this.graphic.moveTo(from.point.x, from.point.y);
+      this.graphic.lineTo(to.point.x, to.point.y);
+    }
+  }
+
+  drawLeg() {
+    const cells = this.cells.slice(0, 2);
+    const pointArray = this.viaPoints.map((v) => v.point);
+    if (cells.length < 2) return;
+    this.graphic.lineStyle(1, '#0000ff', 1); // 얇은 파란 선
+    for (let i = 0; i < cells.length - 1; i++) {
+      const closeBackPoint = Util.closestObj(pointArray, cells[i].point);
+      this.graphic.moveTo(cells[i].point.x, cells[i].point.y);
+      this.graphic.lineTo(closeBackPoint[0].x, closeBackPoint[0].y);
+    }
+  }
+
   showGroupInterest(canvasWidth: number, slice: number) {
     const boxWidth = canvasWidth / slice;
     //console.log(boxWidth);
     this.interests.forEach((interest) => {
       this.graphic.lineStyle(0);
-      const h = interest.weight * 50;
+      if (interest.weight > 0) {
+        const h = interest.weight * 50;
 
-      const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
-      //console.log(hsl);
-      if (interest.point === this.mostInt.point) {
-        this.graphic.beginFill('#000000');
-        console.log(interest.point);
-      } else this.graphic.beginFill(hsl);
-      console.log('hsl to rgba:', hsl.toRgbaString());
+        const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
+        console.log(hsl);
+        if (interest.point === this.mostInt.point) {
+          this.graphic.beginFill('#000000');
+          console.log(interest.point);
+        } else this.graphic.beginFill(hsl);
+        console.log('hsl to rgba:', hsl.toRgbaString());
 
-      this.graphic.drawRect(
-        interest.point.x - boxWidth / 2,
-        interest.point.y - boxWidth / 2,
-        boxWidth,
-        boxWidth
-      );
-      this.graphic.endFill();
+        this.graphic.drawRect(
+          interest.point.x - boxWidth / 2,
+          interest.point.y - boxWidth / 2,
+          boxWidth,
+          boxWidth
+        );
+        this.graphic.endFill();
+      }
     });
     //console.log('showGroupInterest update');
   }

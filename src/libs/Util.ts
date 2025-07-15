@@ -13,13 +13,10 @@ export default class Util {
     return Math.sqrt(dx * dx + dy * dy);
   }
 
-  static closestObj<T extends { point: Point }>(
-    array: T[],
-    obj: { point: Point }
-  ): T[] {
+  static closestObj(array: Point[], obj: Point): Point[] {
     return array.slice().sort((a, b) => {
-      const distA = this.dist(a.point, obj.point);
-      const distB = this.dist(b.point, obj.point);
+      const distA = this.dist(a, obj);
+      const distB = this.dist(b, obj);
       return distA - distB;
     });
   }
@@ -53,8 +50,8 @@ export default class Util {
     const storeArr: T[] = [];
     arr.forEach((element) => {
       const d = this.dist(obj.point, element.point);
-      if (d < obj.near && d !== 0) {
-        storeArr.push(element);
+      if (d < obj.near) {
+        if (d !== 0) storeArr.push(element);
       }
     });
     return storeArr;
