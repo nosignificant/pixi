@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import Cell from './Cell';
-import { GroupData } from './libs/type';
+import { viaPoint, Interests, Point } from './libs/type';
 import Util from './libs/Util';
 import BackCoord from './BackCoord';
 
@@ -13,6 +13,7 @@ export type Interests = {
 export type GroupData = {
   cells: Cell[];
   avgPos: Point;
+  avgPos: Point;
   interests: Interests[];
   mostInterest: Interests;
 };
@@ -23,142 +24,131 @@ export type GroupData = {
 //
 
 export default class Group {
-  static currentId = 0;
-  static groupMap = new Map<number, GroupData>();
-  graphic: PIXI.Graphics = new PIXI.Graphics();
+  currentId: number;
+  viaPoints: viaPoint[];
+  graphic: PIXI.Graphics;
+  cells: Cell[];
+  avgPos: Point;
+  interests: Interests[];
+  mostInt: Interests;
 
-  static groupByID(allCells: Cell[]) {
+  constructor(id: number, closeCell: Cell[]) {
+    this.currentId = id;
+    this.groupInterestArr();
+    this.viaPoints = [];
+    this.graphic = new PIXI.Graphics();
+    this.cells = closeCell;
+    this.avgPos = { x: 0, y: 0 };
+    this.interests = [];
+    this.mostInt = { point: { x: 0, y: 0 }, weight: 0 };
+  }
+
+  static groupByID(allCells: Cell[], groupMap: Map<number, Group>) {
     allCells.forEach((cell) => {
       const id = cell.state.groupID;
       // 세포에 id가 존재하고
       if (id != null) {
         // 1. 해당 id가 등록되어있지 않으면
-        if (!Group.groupMap.has(id)) {
-          // GroupData 전체 구조로 초기화
-          Group.groupMap.set(id, {
-            cells: [],
-            avgPos: { x: 0, y: 0 }, // 초기값
-            interests: [], // 초기값
-            mostInterest: {
-              point: { x: 0, y: 0 },
-              weight: 0,
-            },
-          });
+        if (!groupMap.has(id)) {
+          const newG = new Group(id, cell.closeCells);
+          groupMap.set(id, newG);
         }
-        // 2. 해당 id가 등록되어 있으면
-        Group.groupMap.get(id)!.cells.push(cell);
+      }
+    });
+    return groupMap;
+  }
+
+  update() {
+    this.setAVGpos();
+    this.updateGroupInterest();
+    this.mostInterest();
+    this.drawGroupCellsLines();
+  }
+
+  setAVGpos() {
+    this.avgPos = Util.computeAvgPos(this.cells);
+    //console.log(this.avgPos);
+  }
+
+  drawGroupCellsLines() {
+    const cells = this.cells.slice(0, 2);
+    if (cells.length < 2) return;
+
+    this.graphic.lineStyle(1, 0x8888ff, 1); // 얇은 파란 선
+
+    for (let i = 0; i < cells.length - 1; i++) {
+      const from = cells[i];
+      const to = cells[i + 1];
+
+      this.graphic.moveTo(from.point.x, from.point.y);
+      this.graphic.lineTo(to.point.x, to.point.y);
+    }
+  }
+
+  /* groupInterest */
+  /* groupInterest */
+  /* groupInterest */
+
+  groupInterestArr() {
+    this.interests = BackCoord.points.map((point) => ({
+      point,
+      weight: Math.random(),
+    }));
+
+    this.viaPoints = BackCoord.points.map((point) => ({
+      isVia: false,
+      point,
+    }));
+    //console.log('weight set: ', this.interests);
+  }
+
+  updateGroupInterest() {
+    this.interests.forEach((interest) => {
+      interest.weight = Math.max(0, interest.weight - 0.01);
+
+      // 예시: 랜덤 확률로 다시 살짝 증가
+      if (Math.random() < 0.01) {
+        interest.weight = Math.random(); // 새롭게 관심 끌림
       }
     });
   }
 
-  static update() {
-    Group.setAllGroupAVGpos();
-    Group.updateGroupInterest();
-    Group.mostInterest();
-    Group.gotoInterest();
+  mostInterest() {
+    if (this.interests.length === 0) return;
+
+    const maxInterest = this.interests.reduce((prev, current) =>
+      current.weight > prev.weight ? current : prev
+    );
+
+    this.mostInt = {
+      point: maxInterest.point,
+      weight: maxInterest.weight,
+    };
   }
 
-  static setAllGroupAVGpos() {
-    Group.groupMap.forEach((groupData) => {
-      groupData.avgPos = Util.computeAvgPos(groupData.cells);
-    });
-  }
+  showGroupInterest(canvasWidth: number, slice: number) {
+    const boxWidth = canvasWidth / slice;
+    //console.log(boxWidth);
+    this.interests.forEach((interest) => {
+      this.graphic.lineStyle(0);
+      const h = interest.weight * 50;
 
-  static drawGroupCellsLines(graphics: PIXI.Graphics) {
-    Group.groupMap.forEach((groupData) => {
-      const cells = groupData.cells.slice(0, 2);
-      if (cells.length < 2) return;
+      const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
+      //console.log(hsl);
+      if (interest.point === this.mostInt.point) {
+        this.graphic.beginFill('#000000');
+        console.log(interest.point);
+      } else this.graphic.beginFill(hsl);
+      console.log('hsl to rgba:', hsl.toRgbaString());
 
-      graphics.lineStyle(1, 0x8888ff, 1); // 얇은 파란 선
-
-      for (let i = 0; i < cells.length - 1; i++) {
-        const from = cells[i];
-        const to = cells[i + 1];
-
-        graphics.moveTo(from.point.x, from.point.y);
-        graphics.lineTo(to.point.x, to.point.y);
-      }
-    });
-  }
-
-  /* groupInterest */
-  /* groupInterest */
-  /* groupInterest */
-
-  static groupInterestArr() {
-    Group.groupMap.forEach((groupData) => {
-      groupData.interests = BackCoord.points.map((point) => ({
-        point,
-        weight: Math.random(),
-      }));
-      console.log('weight set: ', groupData.interests);
-    });
-  }
-
-  static updateGroupInterest() {
-    Group.groupMap.forEach((groupData) => {
-      groupData.interests.forEach((interest) => {
-        interest.weight = Math.max(0, interest.weight - 0.01);
-
-        // 예시: 랜덤 확률로 다시 살짝 증가
-        if (Math.random() < 0.01) {
-          interest.weight = Math.random(); // 새롭게 관심 끌림
-        }
-      });
-    });
-  }
-
-  static mostInterest() {
-    Group.groupMap.forEach((groupData) => {
-      if (groupData.interests.length === 0) return;
-
-      const maxInterest = groupData.interests.reduce((prev, current) =>
-        current.weight > prev.weight ? current : prev
+      this.graphic.drawRect(
+        interest.point.x - boxWidth / 2,
+        interest.point.y - boxWidth / 2,
+        boxWidth,
+        boxWidth
       );
-
-      groupData.mostInterest = {
-        point: maxInterest.point,
-        weight: maxInterest.weight,
-      };
+      this.graphic.endFill();
     });
-  }
-
-  static gotoInterest() {
-    Group.groupMap.forEach((groupData) => {
-      groupData.cells.forEach((cell) => {
-        Util.towards(cell, 0.01, groupData.mostInterest, true);
-      });
-    });
-  }
-  static showGroupInterest(
-    canvasWidth: number,
-    slice: number,
-    graphics: PIXI.Graphics
-  ) {
-    Group.groupMap.forEach((groupData) => {
-      const boxWidth = canvasWidth / slice;
-      //console.log(boxWidth);
-      groupData.interests.forEach((interest) => {
-        graphics.lineStyle(0);
-        const h = interest.weight * 50;
-
-        const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
-        //console.log(hsl);
-        if (interest.point === groupData.mostInterest.point) {
-          graphics.beginFill('#000000');
-          console.log(interest.point);
-        } else graphics.beginFill(hsl);
-        //console.log('hsl to rgba:', hsl.toRgbaString());
-
-        graphics.drawRect(
-          interest.point.x - boxWidth / 2,
-          interest.point.y - boxWidth / 2,
-          boxWidth,
-          boxWidth
-        );
-        graphics.endFill();
-      });
-    });
-    console.log('showGroupInterest update');
+    //console.log('showGroupInterest update');
   }
 }

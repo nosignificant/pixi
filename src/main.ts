@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     //변수들//
     const allCells: Cell[] = [];
+    const groupMap = new Map<number, Group>();
 
     const backgroundContainer = new PIXI.Container();
     const graphics = new PIXI.Graphics();
@@ -38,48 +39,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const b = new BackCircle();
     b.drawBackCircle(app.screen.width, 20);
-    BackCoord.drawBackCoord(app.screen.width, 20);
-
     b.dots.forEach((dot) => backgroundContainer.addChild(dot));
 
+    BackCoord.drawBackCoord(app.screen.width, 20);
+
     console.log('cell initialize');
-    for (let i = 0; i < 20; i++) {
+    let cellID = 0;
+    for (let i = 0; i < 10; i++) {
       const offsetX = Math.floor(Math.random() * 100);
       const offsetY = Math.floor(Math.random() * 100);
-      const cell = new Cell(100 + i * 50 - offsetX, 100 + i * 50 - offsetY);
+      const cell = new Cell(
+        100 + i * 50 - offsetX,
+        100 + i * 50 - offsetY,
+        cellID
+      );
       allCells.push(cell);
       app.stage.addChild(cell.graphic);
       // 초기 위치 설정
       cell.graphic.x = cell.point.x;
       cell.graphic.y = cell.point.y;
+      cellID += 1;
     }
-    let initialized = false;
+    //const initialized = false;
     // 매 프레임 업데이트 //
     app.ticker.add(() => {
+      let currentID = 0;
       graphics.clear();
       allCells.forEach((cell) => {
         if (!cell.state.inGroup && cell.closeCells.length > 2) {
-          Group.currentId += 1;
-          cell.tryJoinGroup(Group.currentId);
+          currentID += 1;
+          cell.tryJoinGroup(currentID);
         }
-        //console.log('this group ID: ', cell.groupID);
+        //console.log('this group ID: ', cell.state.groupID);
         cell.update(allCells);
       });
 
       //groupMap초기화//
+      Group.groupByID(allCells, groupMap);
+      groupMap.forEach((group) => {
+        group.update();
+        group.showGroupInterest(app.screen.width, 20);
+      });
+    });
 
-      if (!initialized && Group.currentId !== 0) {
-        Group.groupByID(allCells);
-        Group.groupInterestArr();
-        initialized = true;
-        console.log('init: ', initialized);
-      }
-      Group.groupByID(allCells);
-
-      Group.drawGroupCellsLines(graphics);
-      Group.showGroupInterest(app.screen.width, 20, graphics);
-
-      Group.update();
+    allCells.forEach((cell) => {
+      cell.groupForce(0.5, groupMap);
     });
 
     console.log('Animation started');

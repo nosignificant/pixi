@@ -1,5 +1,5 @@
-import { Point } from './type';
-
+import { Point, viaPoint } from './type';
+//import BackCoord from '../BackCoord';
 // dist: 거리 계산 //
 // closestObj: 배열이 특정 오브젝트에 가까운 순으로 정렬 //
 // towards : obj가 other 쪽으로 force의 힘으로 향함/멀어짐 //
@@ -24,6 +24,7 @@ export default class Util {
     });
   }
 
+  //향하기 또는 멀어지기//
   static towards(
     obj: { point: Point },
     force: number,
@@ -47,15 +48,16 @@ export default class Util {
   //인식 반경//
   static checkNearObj<T extends { point: Point }>(
     arr: T[],
-    storeArr: T[],
     obj: { point: Point; near: number }
-  ): void {
+  ): T[] {
+    const storeArr: T[] = [];
     arr.forEach((element) => {
       const d = this.dist(obj.point, element.point);
-      if (d < obj.near) {
+      if (d < obj.near && d !== 0) {
         storeArr.push(element);
       }
     });
+    return storeArr;
   }
 
   // 배열 평균 위치 계산 //
@@ -68,5 +70,29 @@ export default class Util {
     });
     const len = arr.length || 1;
     return { x: sumX / len, y: sumY / len };
+  }
+
+  getBestVia<T extends { point: Point }>(
+    obj: T,
+    target: Point,
+    viaPoints: viaPoint[]
+  ) {
+    let bestPoint = { point: obj.point };
+    let minDist = Infinity;
+
+    if (Util.dist(obj.point, target) !== 0) {
+      viaPoints.forEach((via) => {
+        if (!via.isVia) {
+          const total =
+            Util.dist(obj.point, via.point) + Util.dist(via.point, target);
+          if (total < minDist) {
+            minDist = total;
+            bestPoint = { point: via.point };
+          }
+          via.isVia = true;
+        }
+      });
+      Util.towards(obj, 0.01, bestPoint, true);
+    }
   }
 }

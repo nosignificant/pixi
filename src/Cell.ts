@@ -6,6 +6,7 @@ import { Point, CellState, Interests } from './libs/type';
 import Group from './group';
 
 export default class Cell {
+  cellID = 0;
   point: Point;
   strength = 0.001;
   creatureSTR = 0.1;
@@ -23,8 +24,9 @@ export default class Cell {
   interests: Interests[] = [];
   graphic: PIXI.Graphics;
 
-  constructor(x: number, y: number) {
-    this.point = { x, y };
+  constructor(x: number, y: number, ID: number) {
+    this.cellID = ID;
+    this.point = { x: x, y: y };
     this.health = 20;
     this.graphic = new PIXI.Graphics();
     this.interests = BackCoord.points.map((p) => ({
@@ -33,22 +35,23 @@ export default class Cell {
     }));
   }
 
-  draw() {
-    this.graphic.clear();
-    this.graphic.beginFill(new PIXI.Color(this.color).toNumber());
-    this.graphic.lineStyle(1, 0x000000);
-    this.graphic.drawCircle(0, 0, this.health / 5);
-    this.graphic.endFill();
-  }
-
   update(allCells: Cell[]) {
     const force = this.state.inGroup ? this.creatureSTR : this.strength;
     this.applySpacingForce(allCells, force);
     this.checkCloseCell(allCells);
     this.graphic.x = this.point.x;
     this.graphic.y = this.point.y;
-
     this.draw();
+  }
+
+  draw() {
+    this.graphic.clear();
+    this.graphic.beginFill(new PIXI.Color(this.color).toNumber());
+    this.graphic.lineStyle(1, 0x000000);
+    this.graphic.drawCircle(0, 0, this.health / 5);
+    this.graphic.endFill();
+    //console.log('draw called', this.point.x, this.point.y);
+    //console.log('cell created at', this.point.x, this.point.y);
   }
 
   tryJoinGroup(groupID: number) {
@@ -61,11 +64,12 @@ export default class Cell {
           cell.state.groupID = groupID;
         }
       });
+      console.log('success grouping: ', this.state.groupID);
     }
   }
 
   checkCloseCell(others: Cell[]) {
-    Util.checkNearObj(others, this.closeCells, this);
+    this.closeCells = Util.checkNearObj(others, this);
   }
 
   applySpacingForce(allCells: Cell[], strength: number) {
@@ -75,32 +79,34 @@ export default class Cell {
       const dist = Util.dist(this.point, other.point);
       if (dist === 0) return;
 
-      if (dist < this.health * 2) {
-        Util.towards(this, strength * (this.health * 2 - dist), other, false);
+      if (dist < this.health / 2) {
+        Util.towards(this, strength * 100, other, false);
       }
 
-      if (dist > this.health) {
-        Util.towards(this, strength * (dist - this.health), other, true);
+      if (dist > this.health * 5) {
+        Util.towards(this, strength, other, true);
       }
     });
   }
 
-  groupForce(strength: number) {
-    Group.groupMap.forEach((groupData) => {
-      groupData.cells.forEach((other) => {
-        if (this === other) return;
-
-        const dist = Util.dist(this.point, other.point);
-        if (dist === 0) return;
-
-        if (dist < this.health * 2) {
-          Util.towards(this, strength * (this.health * 2 - dist), other, false);
-        }
-
-        if (dist > this.health) {
-          Util.towards(this, strength * (dist - this.health), other, true);
-        }
-      });
-    });
+  groupForce(strength: number, groupMap: Map<number, Group>) {
+    if (this.state.groupID !== null) {
+      const group = groupMap.get(this.state.groupID);
+      if (group !== undefined) {
+        group.cells.forEach((other) => {
+          if (this === other) return;
+          const dist = Util.dist(this.point, other.point);
+          if (dist === 0) return;
+          if (dist < this.health) {
+            Util.towards(this, strength, other, false);
+          }
+          if (dist > this.health * 2) {
+            Util.towards(this, strength * 10, { point: group.avgPos }, true);
+          }
+        });
+      } else {
+        console.log(this.state.groupID, ' : groupdata undefined');
+      }
+    }
   }
 }
