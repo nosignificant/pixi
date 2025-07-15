@@ -69,7 +69,7 @@ export default class Util {
     return { x: sumX / len, y: sumY / len };
   }
 
-  getBestVia<T extends { point: Point }>(
+  static getBestVia<T extends { point: Point }>(
     obj: T,
     target: Point,
     viaPoints: viaPoint[]

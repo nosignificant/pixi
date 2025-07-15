@@ -64,6 +64,10 @@ export default class Group {
     this.drawGroupCellsLines();
     this.updateGroupInterest();
     this.drawLeg();
+    this.cells.forEach((cell) => {
+      Util.towards(cell, 1, this.mostInt, true);
+    });
+    this.groupGoTo();
   }
 
   setAVGpos() {
@@ -76,10 +80,14 @@ export default class Group {
   /* groupInterest */
 
   groupInterestArr() {
-    this.interests = BackCoord.points.map((point) => ({
-      point,
-      weight: 0,
-    }));
+    this.interests = BackCoord.points.map((point) => {
+      let plusMinus = 1;
+      if (Math.random() < 0.5) plusMinus = -1;
+      return {
+        point,
+        weight: Math.random() * plusMinus,
+      };
+    });
 
     this.viaPoints = BackCoord.points.map((point) => ({
       isVia: false,
@@ -90,7 +98,11 @@ export default class Group {
 
   updateGroupInterest() {
     this.interests.forEach((interest) => {
-      interest.weight = Math.max(0, interest.weight - 0.01);
+      if (interest.weight < 1) {
+        interest.weight = interest.weight * 1.0001;
+      } else {
+        interest.weight -= 0.1;
+      }
     });
   }
 
@@ -105,6 +117,13 @@ export default class Group {
       point: maxInterest.point,
       weight: maxInterest.weight,
     };
+  }
+  //    obj: T,target: Point, viaPoints: viaPoint[]
+
+  groupGoTo() {
+    this.cells.forEach((cell) => {
+      Util.getBestVia(cell, this.mostInt.point, this.viaPoints);
+    });
   }
 
   /* drawing properties */
@@ -128,14 +147,14 @@ export default class Group {
   }
 
   drawLeg() {
-    const cells = this.cells.slice(0, 2);
+    const cells = this.cells.slice(0, 3);
     const pointArray = this.viaPoints.map((v) => v.point);
     if (cells.length < 2) return;
-    this.graphic.lineStyle(1, '#0000ff', 1); // 얇은 파란 선
+    this.graphic.lineStyle(3, '#0000ff', 1); // 얇은 파란 선
     for (let i = 0; i < cells.length - 1; i++) {
       const closeBackPoint = Util.closestObj(pointArray, cells[i].point);
       this.graphic.moveTo(cells[i].point.x, cells[i].point.y);
-      this.graphic.lineTo(closeBackPoint[0].x, closeBackPoint[0].y);
+      this.graphic.lineTo(closeBackPoint[1].x, closeBackPoint[1].y);
     }
   }
 
@@ -144,16 +163,16 @@ export default class Group {
     //console.log(boxWidth);
     this.interests.forEach((interest) => {
       this.graphic.lineStyle(0);
-      if (interest.weight > 0) {
-        const h = interest.weight * 50;
+      if (interest.weight > 0.5) {
+        const h = interest.weight * 70;
 
         const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
-        console.log(hsl);
+        //console.log(hsl);
         if (interest.point === this.mostInt.point) {
           this.graphic.beginFill('#000000');
-          console.log(interest.point);
+          //console.log(interest.point);
         } else this.graphic.beginFill(hsl);
-        console.log('hsl to rgba:', hsl.toRgbaString());
+        //console.log('hsl to rgba:', hsl.toRgbaString());
 
         this.graphic.drawRect(
           interest.point.x - boxWidth / 2,

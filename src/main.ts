@@ -81,10 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
         group.showGroupInterest(app.screen.width, 20);
         app.stage.addChild(group.graphic);
       });
-    });
-
-    allCells.forEach((cell) => {
-      cell.groupForce(0.5, groupMap);
+      allCells.forEach((cell) => {
+        cell.groupForce(0.5, groupMap);
+      });
     });
 
     console.log('Animation started');

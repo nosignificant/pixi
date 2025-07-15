@@ -81,12 +81,12 @@ export default class Cell {
 
       if (other.state.groupID !== this.state.groupID) {
         if (dist < this.health) {
-          Util.towards(this, strength * 1000, other, false);
+          Util.towards(this, strength * 100, other, false);
         }
       }
 
       if (dist > this.health * 5) {
-        Util.towards(this, strength, other, true);
+        Util.towards(this, strength / 100, other, true);
       }
     });
   }
@@ -99,8 +99,11 @@ export default class Cell {
           if (this === other) return;
 
           const dist = Util.dist(this.point, other.point);
+          if (dist < this.health) {
+            Util.towards(this, strength * 10, other, false);
+          }
           if (dist === 0) return;
-          Util.towards(this, strength * 100, { point: group.avgPos }, true);
+          Util.towards(this, strength, { point: group.avgPos }, true);
         });
       } else {
         console.log(this.state.groupID, ' : groupdata undefined');
