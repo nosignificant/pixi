@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import Cell from './Cell';
-import BackCircle from './BackCircle';
+//import BackCircle from './BackCircle';
 import Group from './group';
 import BackCoord from './BackCoord';
 
@@ -31,21 +31,20 @@ document.addEventListener('DOMContentLoaded', () => {
     //변수들//
     const allCells: Cell[] = [];
     const groupMap = new Map<number, Group>();
-
-    const backgroundContainer = new PIXI.Container();
     const graphics = new PIXI.Graphics();
     app.stage.addChild(graphics);
+    BackCoord.drawBackCoord(pixiContainer.clientWidth, 20);
+
+    /*const backgroundContainer = new PIXI.Container();
     app.stage.addChild(backgroundContainer);
 
     const b = new BackCircle();
     b.drawBackCircle(app.screen.width, 20);
-    b.dots.forEach((dot) => backgroundContainer.addChild(dot));
-
-    BackCoord.drawBackCoord(app.screen.width, 20);
+    b.dots.forEach((dot) => backgroundContainer.addChild(dot));*/
 
     console.log('cell initialize');
     let cellID = 0;
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 20; i++) {
       const offsetX = Math.floor(Math.random() * 100);
       const offsetY = Math.floor(Math.random() * 100);
       const cell = new Cell(
@@ -65,24 +64,22 @@ document.addEventListener('DOMContentLoaded', () => {
     app.ticker.add(() => {
       let currentID = 0;
       graphics.clear();
-      allCells.forEach((cell) => {
-        if (!cell.state.inGroup && cell.closeCells.length > 2) {
-          currentID += 1;
-          cell.tryJoinGroup(currentID);
-        }
-        //console.log('this group ID: ', cell.state.groupID);
-        cell.update(allCells);
-      });
 
       //groupMap초기화//
       Group.groupByID(allCells, groupMap);
       groupMap.forEach((group) => {
         group.update();
-        group.showGroupInterest(app.screen.width, 20);
+        group.setOtherAVGpos(groupMap);
+        group.showGroupInterest(pixiContainer.clientWidth, 20);
         app.stage.addChild(group.graphic);
       });
       allCells.forEach((cell) => {
         cell.groupForce(0.5, groupMap);
+        if (!cell.state.inGroup && cell.closeCells.length > 2) {
+          currentID += 1;
+          Cell.tryJoinGroup(cell, currentID);
+        }
+        cell.update(allCells);
       });
     });
 

@@ -36,9 +36,10 @@ export default class Cell {
   }
 
   update(allCells: Cell[]) {
+    this.checkCloseCell(allCells);
+
     const force = this.state.inGroup ? this.creatureSTR : this.strength;
     this.applySpacingForce(allCells, force);
-    this.checkCloseCell(allCells);
     this.graphic.x = this.point.x;
     this.graphic.y = this.point.y;
     this.draw();
@@ -46,30 +47,42 @@ export default class Cell {
 
   draw() {
     this.graphic.clear();
-    this.graphic.beginFill(new PIXI.Color(this.color).toNumber());
-    this.graphic.lineStyle(1, 0x000000);
+    if (this.state.groupID !== null && this.state.inGroup) {
+      const h = this.state.groupID * 70;
+      const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
+      this.graphic.beginFill(hsl);
+    } else {
+      this.graphic.lineStyle(1, 0x000000, 1); // 검은 테두리
+      this.graphic.beginFill(0xffffff); // 흰색 채우기
+    }
     this.graphic.drawCircle(0, 0, this.health / 5);
     this.graphic.endFill();
     //console.log('draw called', this.point.x, this.point.y);
     //console.log('cell created at', this.point.x, this.point.y);
   }
 
-  tryJoinGroup(groupID: number) {
-    if (this.closeCells.length > 2) {
-      this.state.inGroup = true;
-      this.state.groupID = groupID;
-      this.closeCells.forEach((cell) => {
-        if (!cell.state.inGroup) {
-          cell.state.inGroup = true;
-          cell.state.groupID = groupID;
-        }
-      });
-      console.log('success grouping: ', this.state.groupID);
-    }
+  ///  이거 고쳐야돼!!! ///
+  static tryJoinGroup(cell: Cell, groupID: number): void {
+    // 셀 자신이 이미 그룹에 속해있거나, closeCells 중 하나라도 그룹에 속해있으면 그룹 생성 불가
+    const alreadyGrouped =
+      cell.state.inGroup || cell.closeCells.some((c) => c.state.inGroup);
+
+    if (alreadyGrouped || cell.closeCells.length <= 2) return;
+
+    // 그룹에 참여
+    cell.state.inGroup = true;
+    cell.state.groupID = groupID;
+
+    cell.closeCells.forEach((c) => {
+      c.state.inGroup = true;
+      c.state.groupID = groupID;
+    });
+
+    console.log('success grouping: ', groupID);
   }
 
   checkCloseCell(others: Cell[]) {
-    this.closeCells = Util.checkNearObj(others, this);
+    this.closeCells = Util.checkNearObj(others, this, this.near);
   }
 
   applySpacingForce(allCells: Cell[], strength: number) {
@@ -80,13 +93,13 @@ export default class Cell {
       if (dist === 0) return;
 
       if (other.state.groupID !== this.state.groupID) {
-        if (dist < this.health) {
-          Util.towards(this, strength * 100, other, false);
+        if (dist < this.health * 3) {
+          Util.towards(this, strength, other, false);
         }
       }
 
-      if (dist > this.health * 5) {
-        Util.towards(this, strength / 100, other, true);
+      if (dist > this.health * 15) {
+        Util.towards(this, strength, other, true);
       }
     });
   }
@@ -94,6 +107,7 @@ export default class Cell {
   groupForce(strength: number, groupMap: Map<number, Group>) {
     if (this.state.groupID !== null) {
       const group = groupMap.get(this.state.groupID);
+      console.log(group);
       if (group !== undefined) {
         group.cells.forEach((other) => {
           if (this === other) return;
@@ -103,7 +117,8 @@ export default class Cell {
             Util.towards(this, strength * 10, other, false);
           }
           if (dist === 0) return;
-          Util.towards(this, strength, { point: group.avgPos }, true);
+          if (dist > this.health * 2)
+            Util.towards(this, strength, { point: group.avgPos }, true);
         });
       } else {
         console.log(this.state.groupID, ' : groupdata undefined');

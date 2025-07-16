@@ -25,14 +25,17 @@ export type GroupData = {
 
 export default class Group {
   currentId: number;
+  groupNear: number;
   viaPoints: viaPoint[];
   graphic: PIXI.Graphics;
   cells: Cell[];
   avgPos: Point;
   interests: Interests[];
   mostInt: Interests;
+  otherAVG: Point[];
 
   constructor(id: number, closeCell: Cell[]) {
+    this.otherAVG = [];
     this.currentId = id;
     this.viaPoints = [];
     this.graphic = new PIXI.Graphics();
@@ -41,6 +44,7 @@ export default class Group {
     this.interests = [];
     this.mostInt = { point: { x: 0, y: 0 }, weight: 0 };
     this.groupInterestArr();
+    this.groupNear = this.setGroupNear();
   }
 
   static groupByID(allCells: Cell[], groupMap: Map<number, Group>) {
@@ -55,8 +59,16 @@ export default class Group {
         }
       }
     });
+
+    groupMap.forEach((group) => {
+      console.log(group.cells.length);
+    });
     return groupMap;
   }
+
+  /*settings*/
+  /*settings*/
+  /*settings*/
 
   update() {
     this.setAVGpos();
@@ -64,15 +76,20 @@ export default class Group {
     this.drawGroupCellsLines();
     this.updateGroupInterest();
     this.drawLeg();
-    this.cells.forEach((cell) => {
-      Util.towards(cell, 1, this.mostInt, true);
-    });
     this.groupGoTo();
+  }
+
+  setGroupNear() {
+    return this.cells.length * 100;
   }
 
   setAVGpos() {
     this.avgPos = Util.computeAvgPos(this.cells);
     //console.log(this.avgPos);
+  }
+
+  setOtherAVGpos(groupMap: Map<number, Group>) {
+    this.otherAVG = Array.from(groupMap.values()).map((group) => group.avgPos);
   }
 
   /* groupInterest */
@@ -93,15 +110,31 @@ export default class Group {
       isVia: false,
       point,
     }));
+
     //console.log('weight set: ', this.interests);
   }
 
   updateGroupInterest() {
+    const updateArr: Point[] = [];
+
+    this.otherAVG.forEach((otherPoint) => {
+      BackCoord.points.forEach((backPoint) => {
+        const d = Util.dist(otherPoint, backPoint);
+        if (d < this.groupNear) {
+          updateArr.push(backPoint);
+        }
+      });
+    });
+
     this.interests.forEach((interest) => {
-      if (interest.weight < 1) {
-        interest.weight = interest.weight * 1.0001;
+      const matched = updateArr.some(
+        (p) => p.x === interest.point.x && p.y === interest.point.y
+      );
+
+      if (matched) {
+        interest.weight = Math.min(1, interest.weight + 0.1); // 예: 최대값 1 제한
       } else {
-        interest.weight -= 0.1;
+        interest.weight = Math.max(0, interest.weight - 0.01); // 예: 점점 감소
       }
     });
   }
@@ -132,11 +165,11 @@ export default class Group {
 
   drawGroupCellsLines() {
     this.graphic.clear();
-    const cells = this.cells.slice(0, 2);
+    const cells = this.cells;
     if (cells.length < 2) return;
-
-    this.graphic.lineStyle(1, 0x8888ff, 1); // 얇은 파란 선
-
+    const h = this.currentId * 70;
+    const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
+    this.graphic.lineStyle(1, hsl, 0.7);
     for (let i = 0; i < cells.length - 1; i++) {
       const from = cells[i];
       const to = cells[i + 1];
@@ -150,7 +183,7 @@ export default class Group {
     const cells = this.cells.slice(0, 3);
     const pointArray = this.viaPoints.map((v) => v.point);
     if (cells.length < 2) return;
-    this.graphic.lineStyle(3, '#0000ff', 1); // 얇은 파란 선
+    this.graphic.lineStyle(3, '#0000ff', 1);
     for (let i = 0; i < cells.length - 1; i++) {
       const closeBackPoint = Util.closestObj(pointArray, cells[i].point);
       this.graphic.moveTo(cells[i].point.x, cells[i].point.y);
@@ -164,14 +197,14 @@ export default class Group {
     this.interests.forEach((interest) => {
       this.graphic.lineStyle(0);
       if (interest.weight > 0.5) {
-        const h = interest.weight * 70;
+        const h = interest.weight * this.currentId * 70;
 
         const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
         //console.log(hsl);
         if (interest.point === this.mostInt.point) {
           this.graphic.beginFill('#000000');
           //console.log(interest.point);
-        } else this.graphic.beginFill(hsl);
+        } else this.graphic.beginFill(hsl, 0.3);
         //console.log('hsl to rgba:', hsl.toRgbaString());
 
         this.graphic.drawRect(

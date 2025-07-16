@@ -45,12 +45,13 @@ export default class Util {
   //인식 반경//
   static checkNearObj<T extends { point: Point }>(
     arr: T[],
-    obj: { point: Point; near: number }
+    obj: T,
+    near: number
   ): T[] {
     const storeArr: T[] = [];
     arr.forEach((element) => {
       const d = this.dist(obj.point, element.point);
-      if (d < obj.near) {
+      if (d < near) {
         if (d !== 0) storeArr.push(element);
       }
     });
