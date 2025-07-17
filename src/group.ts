@@ -36,7 +36,7 @@ export default class Group {
   hsl: PIXI.Color;
   groupMap: Map<number, Group>;
 
-  constructor(id: number) {
+  constructor(id: number, groupMap: Map<number, Group>) {
     this.currentId = id;
     this.viaPoints = [];
     this.graphic = new PIXI.Graphics();
@@ -44,7 +44,7 @@ export default class Group {
     this.avgPos = { x: 0, y: 0 };
     this.interests = [];
     this.mostInt = { point: { x: 0, y: 0 }, weight: 0 };
-    this.groupMap = new Map();
+    this.groupMap = groupMap;
     this.groupInterestArr();
     this.groupNear = this.setGroupNear();
     this.hsl = this.setHSL();
@@ -55,39 +55,20 @@ export default class Group {
   /*settings*/
   /*settings*/
 
-  static groupByID(allCells: Cell[], groupMap: Map<number, Group>) {
-    allCells.forEach((cell) => {
-      const id = cell.state.groupID;
-      // 세포에 id가 존재하고
-      if (id != null) {
-        // 1. 해당 id가 등록되어있지 않으면
-        if (!groupMap.has(id)) {
-          const newG = new Group(id);
-          groupMap.set(id, newG);
-        }
-        groupMap.get(id)?.cells.push(cell);
-      }
-    });
-
-    groupMap.forEach((group) => {
-      console.log(group.cells.length);
-    });
-    return groupMap;
-  }
-
-  update() {
-    this.setAVGpos();
-    this.mostInterest();
+  update(groupMap: Map<number, Group>) {
+    this.getGroupMap(groupMap); // groupMap 먼저 받아야 아래들 작동함
+    this.setCloseCells(); // cells 채우기
+    this.setAVGpos(); // 내 그룹 중심 계산
+    this.setOtherAVGpos(); // 다른 그룹의 중심들 저장
+    this.updateGroupInterest(); // 관심도 계산
+    this.mostInterest(); // 가장 관심 높은 곳 찾기
+    this.groupGoTo(); // 가장 관심 있는 곳으로 이동
     this.drawGroupCellsLines();
-    this.updateGroupInterest();
     this.drawLeg();
-    this.groupGoTo();
-    this.setOtherAVGpos();
-    this.cells = this.setCloseCells();
   }
 
   setGroupNear() {
-    return this.cells.length * 100;
+    return this.cells.length * 70;
   }
 
   setAVGpos() {
@@ -96,9 +77,9 @@ export default class Group {
   }
 
   setOtherAVGpos() {
-    this.otherAVG = Array.from(this.groupMap.values()).map(
-      (group) => group.avgPos
-    );
+    this.otherAVG = Array.from(this.groupMap.values())
+      .filter((group) => group.currentId !== this.currentId)
+      .map((group) => group.avgPos);
   }
 
   setHSL() {
@@ -112,8 +93,7 @@ export default class Group {
 
   setCloseCells() {
     const cells = this.groupMap.get(this.currentId)?.cells;
-    if (cells !== undefined) return cells;
-    else return [];
+    this.cells = cells ?? [];
   }
   /* groupInterest */
   /* groupInterest */
@@ -121,11 +101,9 @@ export default class Group {
 
   groupInterestArr() {
     this.interests = BackCoord.points.map((point) => {
-      let plusMinus = 1;
-      if (Math.random() < 0.5) plusMinus = -1;
       return {
         point,
-        weight: Math.random() * plusMinus,
+        weight: 0,
       };
     });
 
@@ -139,7 +117,7 @@ export default class Group {
 
   updateGroupInterest() {
     const updateArr: Point[] = [];
-
+    console.log(this.interests);
     this.otherAVG.forEach((otherPoint) => {
       BackCoord.points.forEach((backPoint) => {
         const d = Util.dist(otherPoint, backPoint);
@@ -178,7 +156,7 @@ export default class Group {
 
   groupGoTo() {
     this.cells.forEach((cell) => {
-      Util.getBestVia(cell, this.mostInt.point, this.viaPoints);
+      Util.towards(cell, 1, { point: this.mostInt.point }, true);
     });
   }
 
@@ -187,6 +165,7 @@ export default class Group {
   /* drawing properties */
 
   drawGroupCellsLines() {
+    console.log(this.cells.length, 'please work');
     this.graphic.clear();
     const cells = this.cells;
     if (cells.length < 2) return;
@@ -205,7 +184,7 @@ export default class Group {
     const cells = this.cells.slice(0, 3);
     const pointArray = this.viaPoints.map((v) => v.point);
     if (cells.length < 2) return;
-    this.graphic.lineStyle(1, this.hsl, 3);
+    this.graphic.lineStyle(1, this.hsl, 1);
     for (let i = 0; i < cells.length - 1; i++) {
       const from = cells[i].point;
       const to = Util.closestObj(pointArray, from)[2];

@@ -66,22 +66,30 @@ document.addEventListener('DOMContentLoaded', () => {
     app.ticker.add(() => {
       let currentID = 0;
       graphics.clear();
-
-      //groupMap초기화//
       groupMap.forEach((group) => {
-        group.update();
-        group.getGroupMap(groupMap);
-        group.showGroupInterest(pixiContainer.clientWidth, 20);
-        app.stage.addChild(group.graphic);
+        app.stage.removeChild(group.graphic); // ✅ stage에서 먼저 제거
       });
+      //groupMap초기화//
+
+      groupMap.clear();
       allCells.forEach((cell) => {
-        cell.groupForce(0.5, groupMap);
-        if (!cell.state.inGroup && cell.closeCells.length > 2) {
-          currentID += 1;
-          if (!cell.state.inGroup) cell.tryJoinGroup(currentID);
+        cell.state.groupID = null;
+        cell.state.inGroup = false;
+      });
+
+      allCells.forEach((cell) => {
+        if (!cell.state.inGroup) {
+          cell.tryJoinGroup(currentID, groupMap);
+          if (cell.state.inGroup) currentID += 1; // 성공한 경우에만 증가
         }
+        cell.groupForce(0.5, groupMap);
         cell.update(allCells);
-        Group.groupByID(allCells, groupMap);
+        cell.draw();
+      });
+      groupMap.forEach((group) => {
+        group.update(groupMap);
+        //group.showGroupInterest(pixiContainer.clientWidth, 20);
+        app.stage.addChild(group.graphic);
       });
     });
 
