@@ -4,6 +4,9 @@ import Cell from './Cell';
 import Group from './group';
 import BackCoord from './BackCoord';
 
+const allCells: Cell[] = [];
+const groupMap = new Map<number, Group>();
+
 document.addEventListener('DOMContentLoaded', () => {
   try {
     const pixiContainer = document.getElementById('pixi-container');
@@ -29,8 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     //변수들//
-    const allCells: Cell[] = [];
-    const groupMap = new Map<number, Group>();
+
     const graphics = new PIXI.Graphics();
     app.stage.addChild(graphics);
     BackCoord.drawBackCoord(pixiContainer.clientWidth, 20);
@@ -66,10 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
       graphics.clear();
 
       //groupMap초기화//
-      Group.groupByID(allCells, groupMap);
       groupMap.forEach((group) => {
         group.update();
-        group.setOtherAVGpos(groupMap);
+        group.getGroupMap(groupMap);
         group.showGroupInterest(pixiContainer.clientWidth, 20);
         app.stage.addChild(group.graphic);
       });
@@ -77,9 +78,10 @@ document.addEventListener('DOMContentLoaded', () => {
         cell.groupForce(0.5, groupMap);
         if (!cell.state.inGroup && cell.closeCells.length > 2) {
           currentID += 1;
-          Cell.tryJoinGroup(cell, currentID);
+          if (!cell.state.inGroup) cell.tryJoinGroup(currentID);
         }
         cell.update(allCells);
+        Group.groupByID(allCells, groupMap);
       });
     });
 

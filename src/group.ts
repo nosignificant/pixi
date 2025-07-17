@@ -33,19 +33,27 @@ export default class Group {
   interests: Interests[];
   mostInt: Interests;
   otherAVG: Point[];
+  hsl: PIXI.Color;
+  groupMap: Map<number, Group>;
 
-  constructor(id: number, closeCell: Cell[]) {
-    this.otherAVG = [];
+  constructor(id: number) {
     this.currentId = id;
     this.viaPoints = [];
     this.graphic = new PIXI.Graphics();
-    this.cells = closeCell;
+    this.cells = [];
     this.avgPos = { x: 0, y: 0 };
     this.interests = [];
     this.mostInt = { point: { x: 0, y: 0 }, weight: 0 };
+    this.groupMap = new Map();
     this.groupInterestArr();
     this.groupNear = this.setGroupNear();
+    this.hsl = this.setHSL();
+    this.otherAVG = [];
   }
+
+  /*settings*/
+  /*settings*/
+  /*settings*/
 
   static groupByID(allCells: Cell[], groupMap: Map<number, Group>) {
     allCells.forEach((cell) => {
@@ -54,9 +62,10 @@ export default class Group {
       if (id != null) {
         // 1. 해당 id가 등록되어있지 않으면
         if (!groupMap.has(id)) {
-          const newG = new Group(id, cell.closeCells);
+          const newG = new Group(id);
           groupMap.set(id, newG);
         }
+        groupMap.get(id)?.cells.push(cell);
       }
     });
 
@@ -66,10 +75,6 @@ export default class Group {
     return groupMap;
   }
 
-  /*settings*/
-  /*settings*/
-  /*settings*/
-
   update() {
     this.setAVGpos();
     this.mostInterest();
@@ -77,6 +82,8 @@ export default class Group {
     this.updateGroupInterest();
     this.drawLeg();
     this.groupGoTo();
+    this.setOtherAVGpos();
+    this.cells = this.setCloseCells();
   }
 
   setGroupNear() {
@@ -88,10 +95,26 @@ export default class Group {
     //console.log(this.avgPos);
   }
 
-  setOtherAVGpos(groupMap: Map<number, Group>) {
-    this.otherAVG = Array.from(groupMap.values()).map((group) => group.avgPos);
+  setOtherAVGpos() {
+    this.otherAVG = Array.from(this.groupMap.values()).map(
+      (group) => group.avgPos
+    );
   }
 
+  setHSL() {
+    const h = this.currentId * 70;
+    return new PIXI.Color({ h: h, s: 70, l: 70 });
+  }
+
+  getGroupMap(groupMap: Map<number, Group>) {
+    this.groupMap = groupMap;
+  }
+
+  setCloseCells() {
+    const cells = this.groupMap.get(this.currentId)?.cells;
+    if (cells !== undefined) return cells;
+    else return [];
+  }
   /* groupInterest */
   /* groupInterest */
   /* groupInterest */
@@ -167,9 +190,8 @@ export default class Group {
     this.graphic.clear();
     const cells = this.cells;
     if (cells.length < 2) return;
-    const h = this.currentId * 70;
-    const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
-    this.graphic.lineStyle(1, hsl, 0.7);
+
+    this.graphic.lineStyle(1, this.hsl, 3);
     for (let i = 0; i < cells.length - 1; i++) {
       const from = cells[i];
       const to = cells[i + 1];
@@ -183,11 +205,26 @@ export default class Group {
     const cells = this.cells.slice(0, 3);
     const pointArray = this.viaPoints.map((v) => v.point);
     if (cells.length < 2) return;
-    this.graphic.lineStyle(3, '#0000ff', 1);
+    this.graphic.lineStyle(1, this.hsl, 3);
     for (let i = 0; i < cells.length - 1; i++) {
-      const closeBackPoint = Util.closestObj(pointArray, cells[i].point);
-      this.graphic.moveTo(cells[i].point.x, cells[i].point.y);
-      this.graphic.lineTo(closeBackPoint[1].x, closeBackPoint[1].y);
+      const from = cells[i].point;
+      const to = Util.closestObj(pointArray, from)[2];
+
+      if (!to) continue; // 안전장치
+      let isUp = -1;
+      if (from.y > to.y) isUp = +1;
+      const mid = {
+        x: (from.x + to.x) / 2 + 10 * isUp - (from.y - to.y) / 100,
+        y: (from.y + to.y) / 2 + 10 * isUp - (from.y - to.y) / 100,
+      };
+
+      // from → mid
+      this.graphic.moveTo(from.x, from.y);
+      this.graphic.lineTo(mid.x, mid.y);
+
+      // mid → to
+      this.graphic.moveTo(mid.x, mid.y);
+      this.graphic.lineTo(to.x, to.y);
     }
   }
 

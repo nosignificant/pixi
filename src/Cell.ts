@@ -62,21 +62,16 @@ export default class Cell {
   }
 
   ///  이거 고쳐야돼!!! ///
-  static tryJoinGroup(cell: Cell, groupID: number): void {
+  tryJoinGroup(groupID: number): void {
     // 셀 자신이 이미 그룹에 속해있거나, closeCells 중 하나라도 그룹에 속해있으면 그룹 생성 불가
     const alreadyGrouped =
-      cell.state.inGroup || cell.closeCells.some((c) => c.state.inGroup);
+      this.state.inGroup || this.closeCells.some((c) => c.state.inGroup);
 
-    if (alreadyGrouped || cell.closeCells.length <= 2) return;
+    if (alreadyGrouped || this.closeCells.length <= 2) return;
 
     // 그룹에 참여
-    cell.state.inGroup = true;
-    cell.state.groupID = groupID;
-
-    cell.closeCells.forEach((c) => {
-      c.state.inGroup = true;
-      c.state.groupID = groupID;
-    });
+    this.state.inGroup = true;
+    this.state.groupID = groupID;
 
     console.log('success grouping: ', groupID);
   }
