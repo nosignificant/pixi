@@ -1,27 +1,8 @@
 import * as PIXI from 'pixi.js';
 import Cell from './Cell';
-import { viaPoint, Interests, Point } from './libs/type';
+import { viaPoint, Interest, Point, GroupChara } from './libs/type';
 import Util from './libs/Util';
 import BackCoord from './BackCoord';
-
-/* 
-export type Interests = {
-  point: Point;
-  weight: number;
-};
-
-export type GroupData = {
-  cells: Cell[];
-  avgPos: Point;
-  avgPos: Point;
-  interests: Interests[];
-  mostInterest: Interests;
-};
-*/
-
-// groupByID : id에 따라 cell을 groupMap에 등록 //
-// setAllGroupAVGpos: groupMap 내 group들 평균 위치 계산해서 avgPos에 넣음 //
-//
 
 export default class Group {
   currentId: number;
@@ -30,11 +11,13 @@ export default class Group {
   graphic: PIXI.Graphics;
   cells: Cell[];
   avgPos: Point;
-  interests: Interests[];
-  mostInt: Interests;
+  interests: Interest[];
+  mostInt: Interest;
   otherAVG: Point[];
   hsl: PIXI.Color;
   groupMap: Map<number, Group>;
+  groupChara: GroupChara;
+  gotoInterest: boolean;
 
   constructor(id: number, groupMap: Map<number, Group>) {
     this.currentId = id;
@@ -46,9 +29,11 @@ export default class Group {
     this.mostInt = { point: { x: 0, y: 0 }, weight: 0 };
     this.groupMap = groupMap;
     this.groupInterestArr();
-    this.groupNear = this.setGroupNear();
+    this.groupNear = 200;
     this.hsl = this.setHSL();
     this.otherAVG = [];
+    this.groupChara = { fear: Math.random() * 10, brave: Math.random() * 10 };
+    this.gotoInterest = true;
   }
 
   /*settings*/
@@ -56,32 +41,39 @@ export default class Group {
   /*settings*/
 
   update(groupMap: Map<number, Group>) {
-    this.getGroupMap(groupMap); // groupMap 먼저 받아야 아래들 작동함
-    this.setCloseCells(); // cells 채우기
     this.setAVGpos(); // 내 그룹 중심 계산
+    this.getGroupMap(groupMap); // groupMap 먼저 받아야 아래들 작동함
     this.setOtherAVGpos(); // 다른 그룹의 중심들 저장
     this.updateGroupInterest(); // 관심도 계산
     this.mostInterest(); // 가장 관심 높은 곳 찾기
-    this.groupGoTo(); // 가장 관심 있는 곳으로 이동
-    this.drawGroupCellsLines();
-    this.drawLeg();
+    this.groupGoTo();
+    this.checkNearGroup();
+    this.checkFear();
   }
 
-  setGroupNear() {
-    return this.cells.length * 70;
+  groupDraw(canvasWidth: number, slice: number) {
+    this.graphic.clear(); // 이전 프레임 그림 삭제
+
+    this.drawGroupCellsLines(); // 선
+    this.drawLeg(); // 다리
+    this.showGroupInterest(canvasWidth, slice); // 관심도
   }
 
+  //평균 위치 계산
   setAVGpos() {
     this.avgPos = Util.computeAvgPos(this.cells);
     //console.log(this.avgPos);
   }
 
+  //다른 그룹 평균위치 받아옴
   setOtherAVGpos() {
     this.otherAVG = Array.from(this.groupMap.values())
       .filter((group) => group.currentId !== this.currentId)
       .map((group) => group.avgPos);
+    //console.log(this.otherAVG);
   }
 
+  //이그룹 색상 설정
   setHSL() {
     const h = this.currentId * 70;
     return new PIXI.Color({ h: h, s: 70, l: 70 });
@@ -91,14 +83,11 @@ export default class Group {
     this.groupMap = groupMap;
   }
 
-  setCloseCells() {
-    const cells = this.groupMap.get(this.currentId)?.cells;
-    this.cells = cells ?? [];
-  }
   /* groupInterest */
   /* groupInterest */
   /* groupInterest */
 
+  //초기화
   groupInterestArr() {
     this.interests = BackCoord.points.map((point) => {
       return {
@@ -112,12 +101,13 @@ export default class Group {
       point,
     }));
 
-    //console.log('weight set: ', this.interests);
+    console.log('initialize groupInterest');
   }
 
+  //
   updateGroupInterest() {
     const updateArr: Point[] = [];
-    console.log(this.interests);
+
     this.otherAVG.forEach((otherPoint) => {
       BackCoord.points.forEach((backPoint) => {
         const d = Util.dist(otherPoint, backPoint);
@@ -133,9 +123,9 @@ export default class Group {
       );
 
       if (matched) {
-        interest.weight = Math.min(1, interest.weight + 0.1); // 예: 최대값 1 제한
+        interest.weight = Math.min(1, interest.weight + 0.1 + Math.random());
       } else {
-        interest.weight = Math.max(0, interest.weight - 0.01); // 예: 점점 감소
+        interest.weight = Math.max(0, interest.weight - 0.0001);
       }
     });
   }
@@ -143,21 +133,22 @@ export default class Group {
   mostInterest() {
     if (this.interests.length === 0) return;
 
-    const maxInterest = this.interests.reduce((prev, current) =>
-      current.weight > prev.weight ? current : prev
-    );
+    const rand = Math.floor(Math.random() * this.interests.length);
 
+    const randInterest = this.interests[rand];
     this.mostInt = {
-      point: maxInterest.point,
-      weight: maxInterest.weight,
+      point: randInterest.point,
+      weight: randInterest.weight,
     };
   }
   //    obj: T,target: Point, viaPoints: viaPoint[]
 
   groupGoTo() {
-    this.cells.forEach((cell) => {
-      Util.towards(cell, 1, { point: this.mostInt.point }, true);
-    });
+    if (this.gotoInterest) {
+      this.cells.forEach((cell) => {
+        Util.towards(cell, 1, { point: this.mostInt.point }, true);
+      });
+    }
   }
 
   /* drawing properties */
@@ -165,8 +156,6 @@ export default class Group {
   /* drawing properties */
 
   drawGroupCellsLines() {
-    console.log(this.cells.length, 'please work');
-    this.graphic.clear();
     const cells = this.cells;
     if (cells.length < 2) return;
 
@@ -218,9 +207,8 @@ export default class Group {
         const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
         //console.log(hsl);
         if (interest.point === this.mostInt.point) {
-          this.graphic.beginFill('#000000');
-          //console.log(interest.point);
-        } else this.graphic.beginFill(hsl, 0.3);
+          // this.graphic.beginFill(hsl);
+        } else this.graphic.beginFill(hsl, 0.2);
         //console.log('hsl to rgba:', hsl.toRgbaString());
 
         this.graphic.drawRect(
@@ -232,6 +220,37 @@ export default class Group {
         this.graphic.endFill();
       }
     });
-    //console.log('showGroupInterest update');
+  }
+
+  /* Group Behaviour */
+  /* Group Behaviour */
+  /* Group Behaviour */
+
+  checkNearGroup(): Group[] {
+    const nearGroup: Group[] = [];
+    this.groupMap.forEach((other) => {
+      const d = Util.dist(other.avgPos, this.avgPos);
+      if (d < this.groupNear) {
+        nearGroup.push(other);
+      }
+    });
+    return nearGroup;
+  }
+
+  checkFear() {
+    const nearGroup = this.checkNearGroup();
+    if (nearGroup.length === 0) this.gotoInterest = true;
+    nearGroup.forEach((other) => {
+      const backNear = Util.closestObj(BackCoord.points, other.avgPos);
+
+      if (this.groupChara.fear > other.groupChara.fear) {
+        console.log('fear check, goto', backNear[100]);
+        this.gotoInterest = false;
+        this.cells.forEach((cell) => {
+          Util.towards(cell, 3, { point: backNear[100] }, true);
+        });
+      }
+    });
   }
 }
+//

@@ -2,7 +2,7 @@
 import * as PIXI from 'pixi.js';
 import Util from './libs/Util';
 import BackCoord from './BackCoord';
-import { Point, CellState, Interests } from './libs/type';
+import { Point, CellState, Interest } from './libs/type';
 import Group from './group';
 
 export default class Cell {
@@ -11,17 +11,16 @@ export default class Cell {
   strength = 1;
   health: number;
   near = 200;
-
   state: CellState = {
     isDead: false,
     inGroup: false,
     groupID: null,
   };
   color: number[] = [1, 1, 1];
-
   closeCells: Cell[] = [];
-  interests: Interests[] = [];
+  interests: Interest[] = [];
   graphic: PIXI.Graphics;
+  group: Group;
 
   constructor(x: number, y: number, ID: number) {
     this.cellID = ID;
@@ -32,60 +31,38 @@ export default class Cell {
       point: p,
       weight: Math.random(),
     }));
+    this.group = this.getGroup();
   }
 
-  update(allCells: Cell[]) {
+  update() {
     //근처에 있는 세포 확인
-    this.checkCloseCell(allCells);
-    const force = this.strength;
-    this.applySpacingForce(force);
+    //this.checkCloseCell(allCells);
+
+    this.applySpacingForce(this.strength);
     this.graphic.x = this.point.x;
     this.graphic.y = this.point.y;
   }
 
   draw() {
     this.graphic.clear();
-    if (this.state.groupID !== null && this.state.inGroup) {
-      const h = this.state.groupID * 100;
-      const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
-      this.graphic.beginFill(hsl);
-    } else {
-      this.graphic.lineStyle(1, 0x000000, 1); // 검은 테두리
-      this.graphic.beginFill(0xffffff); // 흰색 채우기
+    let h = 0;
+    if (this.state.groupID !== null) {
+      h = this.state.groupID * 100;
     }
+    const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
+    this.graphic.beginFill(hsl);
+
     this.graphic.drawCircle(0, 0, this.health / 5);
     this.graphic.endFill();
-    //console.log('draw called', this.point.x, this.point.y);
-    //console.log('cell created at', this.point.x, this.point.y);
-  }
-
-  tryJoinGroup(groupID: number, groupMap: Map<number, Group>): void {
-    const alreadyInGroup = Array.from(groupMap.values()).some((group) =>
-      group.cells.includes(this)
-    );
-
-    if (this.closeCells.length > 3 && !alreadyInGroup) {
-      const group = new Group(groupID, groupMap);
-      group.getGroupMap(groupMap); // ✅ 여기 추가!!
-      group.cells.push(this);
-      this.state.groupID = groupID;
-      this.state.inGroup = true;
-
-      this.closeCells.forEach((c) => {
-        if (!group.cells.includes(c)) {
-          group.cells.push(c);
-          c.state.groupID = groupID;
-          c.state.inGroup = true;
-        }
-      });
-
-      groupMap.set(groupID, group);
-      console.log(`Group ${groupID} created with ${group.cells.length} cells`);
-    }
   }
 
   checkCloseCell(others: Cell[]) {
     this.closeCells = Util.checkNearObj(others, this, this.near);
+  }
+
+  getGroup(groupMap: Map<number, Group>) {
+    if (this.state.groupID !== null) return groupMap.get(this.state.groupID);
+    else return new Group();
   }
 
   applySpacingForce(strength: number) {

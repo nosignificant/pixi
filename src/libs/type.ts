@@ -1,6 +1,6 @@
 export type Point = { x: number; y: number };
 
-export type Interests = {
+export type Interest = {
   point: Point;
   weight: number;
 };
@@ -14,4 +14,9 @@ export type CellState = {
 export type viaPoint = {
   isVia: boolean;
   point: Point;
+};
+
+export type GroupChara = {
+  fear: number;
+  brave: number;
 };

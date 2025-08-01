@@ -1,6 +1,5 @@
 import * as PIXI from 'pixi.js';
 import Cell from './Cell';
-//import BackCircle from './BackCircle';
 import Group from './group';
 import BackCoord from './BackCoord';
 
@@ -37,21 +36,15 @@ document.addEventListener('DOMContentLoaded', () => {
     app.stage.addChild(graphics);
     BackCoord.drawBackCoord(pixiContainer.clientWidth, 20);
 
-    /*const backgroundContainer = new PIXI.Container();
-    app.stage.addChild(backgroundContainer);
-
-    const b = new BackCircle();
-    b.drawBackCircle(app.screen.width, 20);
-    b.dots.forEach((dot) => backgroundContainer.addChild(dot));*/
-
+    // 셀 초기화 //
     console.log('cell initialize');
     let cellID = 0;
     for (let i = 0; i < 20; i++) {
       const offsetX = Math.floor(Math.random() * 100);
       const offsetY = Math.floor(Math.random() * 100);
       const cell = new Cell(
-        100 + i * 50 - offsetX,
-        100 + i * 50 - offsetY,
+        100 + i * 100 - offsetX,
+        100 + i * 100 - offsetY,
         cellID
       );
       allCells.push(cell);
@@ -61,35 +54,38 @@ document.addEventListener('DOMContentLoaded', () => {
       cell.graphic.y = cell.point.y;
       cellID += 1;
     }
-    // 매 프레임 업데이트 //
 
+    // 그룹 생성 + 셀 배정 //
+    const cellsPerGroup = 4;
+    let groupID = 0;
+
+    for (let i = 0; i < allCells.length; i += cellsPerGroup) {
+      const group = new Group(groupID, groupMap);
+
+      const slice = allCells.slice(i, i + cellsPerGroup);
+      slice.forEach((cell) => {
+        cell.state.groupID = groupID;
+        cell.state.inGroup = true;
+        group.cells.push(cell);
+      });
+
+      groupMap.set(groupID, group);
+      app.stage.addChild(group.graphic);
+
+      groupID++;
+    }
     app.ticker.add(() => {
-      let currentID = 0;
       graphics.clear();
-      groupMap.forEach((group) => {
-        app.stage.removeChild(group.graphic); // ✅ stage에서 먼저 제거
-      });
-      //groupMap초기화//
 
-      groupMap.clear();
-      allCells.forEach((cell) => {
-        cell.state.groupID = null;
-        cell.state.inGroup = false;
-      });
-
-      allCells.forEach((cell) => {
-        if (!cell.state.inGroup) {
-          cell.tryJoinGroup(currentID, groupMap);
-          if (cell.state.inGroup) currentID += 1; // 성공한 경우에만 증가
-        }
-        cell.groupForce(0.5, groupMap);
-        cell.update(allCells);
-        cell.draw();
-      });
       groupMap.forEach((group) => {
+        group.getGroupMap(groupMap);
         group.update(groupMap);
-        //group.showGroupInterest(pixiContainer.clientWidth, 20);
-        app.stage.addChild(group.graphic);
+        group.groupDraw(pixiContainer.clientWidth, 20);
+      });
+      allCells.forEach((cell) => {
+        cell.groupForce(1, groupMap);
+        cell.update();
+        cell.draw();
       });
     });
 
