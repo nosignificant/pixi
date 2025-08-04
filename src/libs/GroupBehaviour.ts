@@ -23,9 +23,22 @@ export default class GroupBehaviour {
       if (group.groupChara.fear > other.groupChara.fear) {
         group.gotoInterest = false;
         group.cells.forEach((cell) => {
-          Util.towards(cell, 3, { point: backNear[100] }, true);
+          Util.towards(cell, 3, { point: backNear[150] }, true);
         });
       } else group.gotoInterest = true;
     });
+  }
+
+  static repelOther(groupMap: Map<number, Group>, group: Group) {
+    const nearGroup = this.checkNearGroup(groupMap, group);
+    if (nearGroup.length !== 0) {
+      nearGroup.forEach((other) => {
+        if (other !== group) {
+          group.cells.forEach((cell) => {
+            Util.towards(cell, 1, { point: other.avgPos }, false);
+          });
+        }
+      });
+    }
   }
 }

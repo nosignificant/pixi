@@ -39,9 +39,14 @@ export default class Cell {
   update(groupMap: Map<number, Group>) {
     this.group = this.getGroup(groupMap);
     this.applySpacingForce(this.strength);
+    this.groupForce(10);
+    const w = window.innerWidth; // 또는 app.renderer.width
+    const h = window.innerHeight; // 또는 app.renderer.height
+
+    this.point.x = Math.max(0, Math.min(w, this.point.x));
+    this.point.y = Math.max(0, Math.min(h, this.point.y));
     this.graphic.x = this.point.x;
     this.graphic.y = this.point.y;
-    this.groupForce(1);
   }
 
   draw() {
@@ -86,12 +91,12 @@ export default class Cell {
           if (this === other) return;
 
           const dist = Util.dist(this.point, other.point);
-          if (dist < this.health) {
+          if (dist < this.health / 2) {
             Util.towards(this, strength, other, false);
           }
           if (dist === 0) return;
-          if (dist > this.health * 2)
-            Util.towards(this, strength, { point: group.avgPos }, true);
+          //if (dist > this.health * 2)
+          // Util.towards(this, strength, { point: group.avgPos }, true);
         });
       } else {
         console.log(this.state.groupID, ' : groupdata undefined');

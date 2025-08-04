@@ -49,6 +49,7 @@ export default class Group {
     GB.checkNearGroup(groupMap, this);
     GB.checkFear(groupMap, this);
     this.groupChara = this.setGroupChara();
+    GB.repelOther(groupMap, this);
   }
 
   groupDraw(canvasWidth: number, slice: number) {
@@ -56,7 +57,7 @@ export default class Group {
 
     this.drawGroupCellsLines(); // 선
     this.drawLeg(); // 다리
-    this.showGroupInterest(canvasWidth, slice); // 관심도
+    //this.showGroupInterest(canvasWidth, slice); // 관심도
   }
 
   //평균 위치 계산
