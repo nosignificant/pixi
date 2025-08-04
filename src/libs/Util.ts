@@ -1,4 +1,4 @@
-import { Point, viaPoint } from './type';
+import { Point } from './type';
 //import BackCoord from '../BackCoord';
 // dist: 거리 계산 //
 // closestObj: 배열이 특정 오브젝트에 가까운 순으로 정렬 //
@@ -68,29 +68,5 @@ export default class Util {
     });
     const len = arr.length || 1;
     return { x: sumX / len, y: sumY / len };
-  }
-
-  static getBestVia<T extends { point: Point }>(
-    obj: T,
-    target: Point,
-    viaPoints: viaPoint[]
-  ) {
-    let bestPoint = { point: obj.point };
-    let minDist = Infinity;
-
-    if (Util.dist(obj.point, target) !== 0) {
-      viaPoints.forEach((via) => {
-        if (!via.isVia) {
-          const total =
-            Util.dist(obj.point, via.point) + Util.dist(via.point, target);
-          if (total < minDist) {
-            minDist = total;
-            bestPoint = { point: via.point };
-          }
-          via.isVia = true;
-        }
-      });
-      Util.towards(obj, 0.01, bestPoint, true);
-    }
   }
 }

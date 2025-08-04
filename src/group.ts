@@ -1,13 +1,13 @@
 import * as PIXI from 'pixi.js';
 import Cell from './Cell';
-import { viaPoint, Interest, Point, GroupChara } from './libs/type';
+import { Interest, Point, GroupChara } from './libs/type';
 import Util from './libs/Util';
-import BackCoord from './BackCoord';
+import BackCoord from './libs/BackCoord';
+import GB from './libs/groupBehaviour';
 
 export default class Group {
   currentId: number;
   groupNear: number;
-  viaPoints: viaPoint[];
   graphic: PIXI.Graphics;
   cells: Cell[];
   avgPos: Point;
@@ -21,7 +21,6 @@ export default class Group {
 
   constructor(id: number, groupMap: Map<number, Group>) {
     this.currentId = id;
-    this.viaPoints = [];
     this.graphic = new PIXI.Graphics();
     this.cells = [];
     this.avgPos = { x: 0, y: 0 };
@@ -32,7 +31,7 @@ export default class Group {
     this.groupNear = 200;
     this.hsl = this.setHSL();
     this.otherAVG = [];
-    this.groupChara = { fear: Math.random() * 10, brave: Math.random() * 10 };
+    this.groupChara = { fear: 0, brave: 0 };
     this.gotoInterest = true;
   }
 
@@ -47,8 +46,9 @@ export default class Group {
     this.updateGroupInterest(); // 관심도 계산
     this.mostInterest(); // 가장 관심 높은 곳 찾기
     this.groupGoTo();
-    this.checkNearGroup();
-    this.checkFear();
+    GB.checkNearGroup(groupMap, this);
+    GB.checkFear(groupMap, this);
+    this.groupChara = this.setGroupChara();
   }
 
   groupDraw(canvasWidth: number, slice: number) {
@@ -83,6 +83,17 @@ export default class Group {
     this.groupMap = groupMap;
   }
 
+  setGroupChara() {
+    const totalBrave = this.cells.reduce(
+      (sum, cell) => sum + (cell.state.brave || 0),
+      0
+    );
+    const totalFear = this.cells.reduce(
+      (sum, cell) => sum + (cell.state.fear || 0),
+      0
+    );
+    return { brave: totalBrave, fear: totalFear };
+  }
   /* groupInterest */
   /* groupInterest */
   /* groupInterest */
@@ -95,11 +106,6 @@ export default class Group {
         weight: 0,
       };
     });
-
-    this.viaPoints = BackCoord.points.map((point) => ({
-      isVia: false,
-      point,
-    }));
 
     console.log('initialize groupInterest');
   }
@@ -141,7 +147,6 @@ export default class Group {
       weight: randInterest.weight,
     };
   }
-  //    obj: T,target: Point, viaPoints: viaPoint[]
 
   groupGoTo() {
     if (this.gotoInterest) {
@@ -171,7 +176,7 @@ export default class Group {
 
   drawLeg() {
     const cells = this.cells.slice(0, 3);
-    const pointArray = this.viaPoints.map((v) => v.point);
+    const pointArray = BackCoord.points;
     if (cells.length < 2) return;
     this.graphic.lineStyle(1, this.hsl, 1);
     for (let i = 0; i < cells.length - 1; i++) {
@@ -225,32 +230,5 @@ export default class Group {
   /* Group Behaviour */
   /* Group Behaviour */
   /* Group Behaviour */
-
-  checkNearGroup(): Group[] {
-    const nearGroup: Group[] = [];
-    this.groupMap.forEach((other) => {
-      const d = Util.dist(other.avgPos, this.avgPos);
-      if (d < this.groupNear) {
-        nearGroup.push(other);
-      }
-    });
-    return nearGroup;
-  }
-
-  checkFear() {
-    const nearGroup = this.checkNearGroup();
-    if (nearGroup.length === 0) this.gotoInterest = true;
-    nearGroup.forEach((other) => {
-      const backNear = Util.closestObj(BackCoord.points, other.avgPos);
-
-      if (this.groupChara.fear > other.groupChara.fear) {
-        console.log('fear check, goto', backNear[100]);
-        this.gotoInterest = false;
-        this.cells.forEach((cell) => {
-          Util.towards(cell, 3, { point: backNear[100] }, true);
-        });
-      }
-    });
-  }
 }
 //

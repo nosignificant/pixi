@@ -1,4 +1,4 @@
-import { Point } from './libs/type';
+import { Point } from './type';
 
 export default class BackCoord {
   static points: Point[] = [];

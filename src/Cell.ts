@@ -1,7 +1,7 @@
 // src/Cell.ts
 import * as PIXI from 'pixi.js';
 import Util from './libs/Util';
-import BackCoord from './BackCoord';
+import BackCoord from './libs/BackCoord';
 import { Point, CellState, Interest } from './libs/type';
 import Group from './group';
 
@@ -13,14 +13,16 @@ export default class Cell {
   near = 200;
   state: CellState = {
     isDead: false,
-    inGroup: false,
     groupID: null,
+    fear: Math.random(),
+    brave: Math.random(),
   };
   color: number[] = [1, 1, 1];
   closeCells: Cell[] = [];
   interests: Interest[] = [];
   graphic: PIXI.Graphics;
-  group: Group;
+
+  group: Group | undefined;
 
   constructor(x: number, y: number, ID: number) {
     this.cellID = ID;
@@ -31,16 +33,15 @@ export default class Cell {
       point: p,
       weight: Math.random(),
     }));
-    this.group = this.getGroup();
+    this.group = undefined;
   }
 
-  update() {
-    //근처에 있는 세포 확인
-    //this.checkCloseCell(allCells);
-
+  update(groupMap: Map<number, Group>) {
+    this.group = this.getGroup(groupMap);
     this.applySpacingForce(this.strength);
     this.graphic.x = this.point.x;
     this.graphic.y = this.point.y;
+    this.groupForce(1);
   }
 
   draw() {
@@ -62,7 +63,6 @@ export default class Cell {
 
   getGroup(groupMap: Map<number, Group>) {
     if (this.state.groupID !== null) return groupMap.get(this.state.groupID);
-    else return new Group();
   }
 
   applySpacingForce(strength: number) {
@@ -78,9 +78,9 @@ export default class Cell {
     });
   }
 
-  groupForce(strength: number, groupMap: Map<number, Group>) {
+  groupForce(strength: number) {
     if (this.state.groupID !== null) {
-      const group = groupMap.get(this.state.groupID);
+      const group = this.group;
       if (group !== undefined) {
         group.cells.forEach((other) => {
           if (this === other) return;

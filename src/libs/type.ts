@@ -7,13 +7,9 @@ export type Interest = {
 
 export type CellState = {
   isDead: boolean;
-  inGroup: boolean;
   groupID: number | null;
-};
-
-export type viaPoint = {
-  isVia: boolean;
-  point: Point;
+  fear: number;
+  brave: number;
 };
 
 export type GroupChara = {
