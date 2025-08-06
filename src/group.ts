@@ -3,7 +3,7 @@ import Cell from './Cell';
 import { Interest, Point, GroupChara } from './libs/type';
 import Util from './libs/Util';
 import BackCoord from './libs/BackCoord';
-import GB from './libs/groupBehaviour';
+import GB from './libs/GroupBehaviour';
 
 export default class Group {
   currentId: number;
@@ -18,6 +18,7 @@ export default class Group {
   groupMap: Map<number, Group>;
   groupChara: GroupChara;
   gotoInterest: boolean;
+  lifetime: number;
 
   constructor(id: number, groupMap: Map<number, Group>) {
     this.currentId = id;
@@ -28,11 +29,12 @@ export default class Group {
     this.mostInt = { point: { x: 0, y: 0 }, weight: 0 };
     this.groupMap = groupMap;
     this.groupInterestArr();
-    this.groupNear = 200;
+    this.groupNear = 50;
     this.hsl = this.setHSL();
     this.otherAVG = [];
     this.groupChara = { fear: 0, brave: 0 };
     this.gotoInterest = true;
+    this.lifetime = 0;
   }
 
   /*settings*/
@@ -47,17 +49,17 @@ export default class Group {
     this.mostInterest(); // 가장 관심 높은 곳 찾기
     this.groupGoTo();
     GB.checkNearGroup(groupMap, this);
-    GB.checkFear(groupMap, this);
-    this.groupChara = this.setGroupChara();
     GB.repelOther(groupMap, this);
+    this.groupChara = this.setGroupChara();
+    this.lifetime += 0.1;
   }
 
-  groupDraw(canvasWidth: number, slice: number) {
-    this.graphic.clear(); // 이전 프레임 그림 삭제
-
-    this.drawGroupCellsLines(); // 선
-    this.drawLeg(); // 다리
-    //this.showGroupInterest(canvasWidth, slice); // 관심도
+  groupDraw(boxWidth: number) {
+    this.graphic.clear();
+    GB.checkFear(this.groupMap, this);
+    this.drawGroupCellsLines();
+    this.drawLeg();
+    this.showGroupInterest(boxWidth); // 관심도
   }
 
   //평균 위치 계산
@@ -130,9 +132,9 @@ export default class Group {
       );
 
       if (matched) {
-        interest.weight = Math.min(1, interest.weight + 0.1 + Math.random());
+        interest.weight = Math.min(1, interest.weight + Math.random());
       } else {
-        interest.weight = Math.max(0, interest.weight - 0.0001);
+        interest.weight = Math.max(0, interest.weight - 0.01);
       }
     });
   }
@@ -140,13 +142,9 @@ export default class Group {
   mostInterest() {
     if (this.interests.length === 0) return;
 
-    const rand = Math.floor(Math.random() * this.interests.length);
-
-    const randInterest = this.interests[rand];
-    this.mostInt = {
-      point: randInterest.point,
-      weight: randInterest.weight,
-    };
+    this.mostInt = this.interests.reduce((prev, current) =>
+      current.weight > prev.weight ? current : prev
+    );
   }
 
   groupGoTo() {
@@ -184,7 +182,7 @@ export default class Group {
       const from = cells[i].point;
       const to = Util.closestObj(pointArray, from)[2];
 
-      if (!to) continue; // 안전장치
+      if (!to) continue;
       let isUp = -1;
       if (from.y > to.y) isUp = +1;
       const mid = {
@@ -202,9 +200,7 @@ export default class Group {
     }
   }
 
-  showGroupInterest(canvasWidth: number, slice: number) {
-    const boxWidth = canvasWidth / slice;
-    //console.log(boxWidth);
+  showGroupInterest(boxWidth: number) {
     this.interests.forEach((interest) => {
       this.graphic.lineStyle(0);
       if (interest.weight > 0.5) {
@@ -213,7 +209,7 @@ export default class Group {
         const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
         //console.log(hsl);
         if (interest.point === this.mostInt.point) {
-          // this.graphic.beginFill(hsl);
+          this.graphic.beginFill('#000000');
         } else this.graphic.beginFill(hsl, 0.2);
         //console.log('hsl to rgba:', hsl.toRgbaString());
 
@@ -227,9 +223,4 @@ export default class Group {
       }
     });
   }
-
-  /* Group Behaviour */
-  /* Group Behaviour */
-  /* Group Behaviour */
 }
-//

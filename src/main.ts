@@ -27,11 +27,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     //변수들//
+    const slice = 20;
+    const boxWidth = pixiContainer.clientWidth / slice;
+    console.log(pixiContainer.clientWidth, boxWidth);
 
     const graphics = new PIXI.Graphics();
     app.stage.addChild(graphics);
     BackCoord.drawBackCoord(pixiContainer.clientWidth, 20);
-    const sim = new Simulation(app);
+    const sim = new Simulation(app, boxWidth);
 
     app.ticker.add(() => {
       sim.step();

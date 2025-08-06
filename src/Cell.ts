@@ -38,8 +38,7 @@ export default class Cell {
 
   update(groupMap: Map<number, Group>) {
     this.group = this.getGroup(groupMap);
-    this.applySpacingForce(this.strength);
-    this.groupForce(10);
+    this.groupForce(1);
     const w = window.innerWidth; // 또는 app.renderer.width
     const h = window.innerHeight; // 또는 app.renderer.height
 
@@ -57,7 +56,15 @@ export default class Cell {
     }
     const hsl = new PIXI.Color({ h: h, s: 70, l: 70 });
     this.graphic.beginFill(hsl);
-
+    const fearFloor = Math.floor(this.state.fear * 10);
+    /*Util.drawRegularPolygon(
+      this.graphic,
+      this.point.x,
+      this.point.y,
+      this.health / 5,
+      fearFloor / 2,
+      hsl
+    );*/
     this.graphic.drawCircle(0, 0, this.health / 5);
     this.graphic.endFill();
   }
@@ -70,37 +77,22 @@ export default class Cell {
     if (this.state.groupID !== null) return groupMap.get(this.state.groupID);
   }
 
-  applySpacingForce(strength: number) {
-    this.closeCells.forEach((other) => {
-      if (this === other) return;
-
-      const dist = Util.dist(this.point, other.point);
-      if (dist === 0) return;
-
-      if (dist > this.health) {
-        Util.towards(this, strength, other, true);
-      }
-    });
-  }
-
   groupForce(strength: number) {
-    if (this.state.groupID !== null) {
-      const group = this.group;
-      if (group !== undefined) {
-        group.cells.forEach((other) => {
-          if (this === other) return;
+    const group = this.group;
+    if (group !== undefined) {
+      group.cells.forEach((other) => {
+        if (this === other) return;
 
-          const dist = Util.dist(this.point, other.point);
-          if (dist < this.health / 2) {
-            Util.towards(this, strength, other, false);
-          }
-          if (dist === 0) return;
-          //if (dist > this.health * 2)
-          // Util.towards(this, strength, { point: group.avgPos }, true);
-        });
-      } else {
-        console.log(this.state.groupID, ' : groupdata undefined');
-      }
+        const dist = Util.dist(this.point, other.point);
+        if (dist < this.health / 2) {
+          Util.towards(this, strength, other, false);
+        }
+        if (dist === 0) return;
+        if (dist > this.health * 2)
+          Util.towards(this, strength, { point: group.avgPos }, true);
+      });
+    } else {
+      console.log(this.state.groupID, ' : groupdata undefined');
     }
   }
 }

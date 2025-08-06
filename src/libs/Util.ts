@@ -1,4 +1,5 @@
 import { Point } from './type';
+import * as PIXI from 'pixi.js';
 //import BackCoord from '../BackCoord';
 // dist: 거리 계산 //
 // closestObj: 배열이 특정 오브젝트에 가까운 순으로 정렬 //
@@ -68,5 +69,25 @@ export default class Util {
     });
     const len = arr.length || 1;
     return { x: sumX / len, y: sumY / len };
+  }
+
+  static drawRegularPolygon(
+    graphics: PIXI.Graphics,
+    cx: number,
+    cy: number,
+    radius: number,
+    sides: number,
+    color: PIXI.Color
+  ) {
+    graphics.clear(); // 이전 프레임 클리어
+    graphics.beginFill(color);
+    const angleStep = (Math.PI * 2) / sides;
+    graphics.moveTo(cx + radius, cy);
+    for (let i = 1; i <= sides; i++) {
+      const angle = i * angleStep;
+      const x = cx + radius * Math.cos(angle);
+      const y = cy + radius * Math.sin(angle);
+      graphics.lineTo(x, y);
+    }
   }
 }
