@@ -25,7 +25,11 @@ export default class GroupBehaviour {
     // 가장 먼 도망 위치 한 번만 계산
     const backNear = Util.closestObj(BackCoord.points, group.avgPos);
     const mostFar = backNear[backNear.length - 1];
-
+    console.log(
+      nearGroups.length,
+      Math.floor(mostFar.x),
+      Math.floor(mostFar.y)
+    );
     // 주변 그룹마다 fear/brave 비교
     for (const other of nearGroups) {
       if (group.groupChara.brave < other.groupChara.brave) {
@@ -39,12 +43,15 @@ export default class GroupBehaviour {
 
           group.cells.forEach((cell) => {
             Util.towards(cell, 5, { point: mostFar }, true);
+            if (Util.dist(cell.point, mostFar) < 50) {
+              console.log('gotoInterest true');
+              group.gotoInterest = true;
+            }
             cell.state.fear -= 0.01;
           });
 
           return;
         }
-        group.gotoInterest = true;
       }
     }
 
